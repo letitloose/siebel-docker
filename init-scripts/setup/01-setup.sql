@@ -1,116 +1,80 @@
-create tablespace siebel_data
-   datafile '/opt/oracle/oradata/ORCLCDB/ORCLPDB1/SIEBEL_DATA.DBF' size 2G
-   autoextend on next 100M maxsize unlimited
-logging
-   extent management local
-segment space management auto;
+WHENEVER SQLERROR CONTINUE
 
-create tablespace siebel_index
-   datafile '/opt/oracle/oradata/ORCLCDB/ORCLPDB1/SIEBEL_INDEX.DBF' size 2G
-   autoextend on next 100M maxsize unlimited
-logging
-   extent management local
-segment space management auto;
+-- All setup runs inside the PDB
+ALTER SESSION SET CONTAINER = ORCLPDB1;
+ALTER SESSION SET "_oracle_script" = TRUE;
 
-create tablespace siebel_etl_data
-   datafile '/opt/oracle/oradata/ORCLCDB/ORCLPDB1/SIEBEL_ETL_DATA.DBF' size 2G
-   autoextend on next 100M maxsize unlimited
-logging
-   extent management local
-segment space management auto;
+-- Expose the host dumps bind-mount as an Oracle directory so impdp can read it
+CREATE OR REPLACE DIRECTORY siebel_dumps AS '/opt/oracle/dumps';
+GRANT READ, WRITE ON DIRECTORY siebel_dumps TO sys;
 
-create tablespace edq_data
-   datafile '/opt/oracle/oradata/ORCLCDB/ORCLPDB1/EDQ_DATA.DBF' size 2G
-   autoextend on next 100M maxsize unlimited
-logging
-   extent management local
-segment space management auto;
+CREATE TABLESPACE siebel_data
+   DATAFILE '/opt/oracle/oradata/ORCLCDB/ORCLPDB1/SIEBEL_DATA.DBF' SIZE 2G
+   AUTOEXTEND ON NEXT 100M MAXSIZE UNLIMITED
+   LOGGING EXTENT MANAGEMENT LOCAL SEGMENT SPACE MANAGEMENT AUTO;
 
-alter session set "_oracle_script" = true;
-alter profile default limit
-   password_verify_function null;
-alter profile default limit
-   password_reuse_max unlimited;
-alter profile default limit
-   password_reuse_time unlimited;
-alter profile default limit
-   password_life_time unlimited;
+CREATE TABLESPACE siebel_index
+   DATAFILE '/opt/oracle/oradata/ORCLCDB/ORCLPDB1/SIEBEL_INDEX.DBF' SIZE 2G
+   AUTOEXTEND ON NEXT 100M MAXSIZE UNLIMITED
+   LOGGING EXTENT MANAGEMENT LOCAL SEGMENT SPACE MANAGEMENT AUTO;
 
-drop role sse_role;
-drop role tblo_role;
+CREATE TABLESPACE siebel_etl_data
+   DATAFILE '/opt/oracle/oradata/ORCLCDB/ORCLPDB1/SIEBEL_ETL_DATA.DBF' SIZE 2G
+   AUTOEXTEND ON NEXT 100M MAXSIZE UNLIMITED
+   LOGGING EXTENT MANAGEMENT LOCAL SEGMENT SPACE MANAGEMENT AUTO;
 
-create role sse_role;
-grant create session to sse_role;
+CREATE TABLESPACE edq_data
+   DATAFILE '/opt/oracle/oradata/ORCLCDB/ORCLPDB1/EDQ_DATA.DBF' SIZE 2G
+   AUTOEXTEND ON NEXT 100M MAXSIZE UNLIMITED
+   LOGGING EXTENT MANAGEMENT LOCAL SEGMENT SPACE MANAGEMENT AUTO;
 
-create role tblo_role;
-grant alter session,
-   create cluster,
-   create database link,
-   create indextype,
-   create operator,
-   create procedure,
-   create sequence,
-   create session,
-   create synonym,
-   create table,
-   create trigger,
-   create type,
-   create view,
-   create dimension,
-   create materialized view,
-   query rewrite,
-   on commit refresh
-to tblo_role;
+ALTER PROFILE DEFAULT LIMIT PASSWORD_VERIFY_FUNCTION NULL;
+ALTER PROFILE DEFAULT LIMIT PASSWORD_REUSE_MAX UNLIMITED;
+ALTER PROFILE DEFAULT LIMIT PASSWORD_REUSE_TIME UNLIMITED;
+ALTER PROFILE DEFAULT LIMIT PASSWORD_LIFE_TIME UNLIMITED;
 
-create user siebel identified by siebel20ax3tmy;
-grant tblo_role to siebel;
-grant sse_role to siebel;
-alter user siebel
-   quota 0 on system
-   quota 0 on sysaux;
+-- Roles may not exist on first run; errors are expected and suppressed above
+DROP ROLE sse_role;
+DROP ROLE tblo_role;
 
-alter user siebel
-   temporary tablespace temp;
-alter user siebel
-   quota unlimited on siebel_data;
+CREATE ROLE sse_role;
+GRANT CREATE SESSION TO sse_role;
 
-create user sadmin identified by sadmin20ax3tmy;
-grant sse_role to sadmin;
-alter user sadmin
-   default tablespace siebel_data;
-alter user sadmin
-   temporary tablespace temp;
+CREATE ROLE tblo_role;
+GRANT ALTER SESSION, CREATE CLUSTER, CREATE DATABASE LINK, CREATE INDEXTYPE,
+      CREATE OPERATOR, CREATE PROCEDURE, CREATE SEQUENCE, CREATE SESSION,
+      CREATE SYNONYM, CREATE TABLE, CREATE TRIGGER, CREATE TYPE, CREATE VIEW,
+      CREATE DIMENSION, CREATE MATERIALIZED VIEW, QUERY REWRITE, ON COMMIT REFRESH
+   TO tblo_role;
 
-create user ldapuser identified by ldapuser20ax3tmy;
-grant sse_role to ldapuser;
-alter user ldapuser
-   default tablespace siebel_data;
-alter user ldapuser
-   temporary tablespace temp;
+CREATE USER siebel IDENTIFIED BY siebel20ax3tmy;
+GRANT tblo_role TO siebel;
+GRANT sse_role TO siebel;
+ALTER USER siebel QUOTA 0 ON SYSTEM QUOTA 0 ON SYSAUX;
+ALTER USER siebel TEMPORARY TABLESPACE TEMP;
+ALTER USER siebel QUOTA UNLIMITED ON siebel_data;
+GRANT UNLIMITED TABLESPACE TO siebel;
 
-create user guesterm identified by guesterm20ax3tmy;
-grant sse_role to guesterm;
-alter user guesterm
-   default tablespace siebel_data;
-alter user guesterm
-   temporary tablespace temp;
+CREATE USER sadmin IDENTIFIED BY sadmin20ax3tmy;
+GRANT sse_role TO sadmin;
+ALTER USER sadmin DEFAULT TABLESPACE siebel_data;
+ALTER USER sadmin TEMPORARY TABLESPACE TEMP;
+ALTER USER sadmin QUOTA UNLIMITED ON siebel_data;
+GRANT UNLIMITED TABLESPACE TO sadmin;
 
-create user guestcst identified by guestcst20ax3tmy;
-grant sse_role to guestcst;
-alter user guestcst
-   default tablespace siebel_data;
-alter user guestcst
-   temporary tablespace temp;
+CREATE USER ldapuser IDENTIFIED BY ldapuser20ax3tmy;
+GRANT sse_role TO ldapuser;
+ALTER USER ldapuser DEFAULT TABLESPACE siebel_data;
+ALTER USER ldapuser TEMPORARY TABLESPACE TEMP;
 
-alter session set "_oracle_script" = true;
-alter profile default limit
-   password_verify_function null;
-alter profile default limit
-   password_reuse_max unlimited;
-alter user siebel
-   quota unlimited on siebel_data;
-alter user sadmin
-   quota unlimited on siebel_data;
+CREATE USER guesterm IDENTIFIED BY guesterm20ax3tmy;
+GRANT sse_role TO guesterm;
+ALTER USER guesterm DEFAULT TABLESPACE siebel_data;
+ALTER USER guesterm TEMPORARY TABLESPACE TEMP;
 
-grant unlimited tablespace to siebel;
-grant unlimited tablespace to sadmin;
+CREATE USER guestcst IDENTIFIED BY guestcst20ax3tmy;
+GRANT sse_role TO guestcst;
+ALTER USER guestcst DEFAULT TABLESPACE siebel_data;
+ALTER USER guestcst TEMPORARY TABLESPACE TEMP;
+
+EXIT;

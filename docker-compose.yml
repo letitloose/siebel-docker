@@ -1,18 +1,28 @@
 services:
   oracle19c:
-    image: container-registry.oracle.com/database/enterprise
-    container_name: oracle19c
-    hostname: oraclehost
+    image: container-registry.oracle.com/database/enterprise_ru:latest-19
+    container_name: db19sbl249
+    hostname: db19sbl249
+    networks:
+      siebelnet:
+        aliases:
+          - db19sbl249
     ports:
       - "1521:1521"
       - "5500:5500"
     env_file: .env
+    environment:
+      ENABLE_ARCHIVELOG: "true"
     volumes:
       - oracle_data:/opt/oracle/oradata
-      # - ./init-scripts:/opt/oracle/scripts/startup
-      # - ./init-scripts:/docker-entrypoint-initdb.d
+      - ./dumps:/opt/oracle/dumps
+      - ./init-scripts/setup:/opt/oracle/scripts/setup
     shm_size: '2gb'
-    restart: always
+    restart: unless-stopped
+
+networks:
+  siebelnet:
+    name: siebelnet
 
 volumes:
   oracle_data:
