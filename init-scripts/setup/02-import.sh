@@ -3,7 +3,6 @@
 # Imports the SIEBEL schema from a Data Pump dump file placed in ./dumps/.
 
 DUMP_FILE="${DUMP_FILE}"
-CONNECT="sys/${ORACLE_PWD}@//localhost:1521/ORCLPDB1 as sysdba"
 
 if [ ! -f "/opt/oracle/dumps/${DUMP_FILE}" ]; then
     echo "ERROR: Dump file not found: /opt/oracle/dumps/${DUMP_FILE}"
@@ -15,7 +14,7 @@ echo "Starting SIEBEL schema import from ${DUMP_FILE} ..."
 
 export ORACLE_PDB_SID=ORCLPDB1
 
-impdp "${CONNECT}" \
+impdp \"sys/${ORACLE_PWD}@//localhost:1521/ORCLPDB1 as sysdba\" \
     SCHEMAS=SIEBEL \
     DIRECTORY=siebel_dumps \
     DUMPFILE="${DUMP_FILE}" \

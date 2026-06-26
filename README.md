@@ -2,12 +2,43 @@
 
 Docker Compose setup for a Siebel CRM environment, starting with an Oracle 19c database container pre-loaded with a Siebel schema via Data Pump import.
 
+## Prerequisites
+
+### Oracle Container Registry
+Create an account on container-registry.oracle.com and generate a token, then log in:
+```bash
+docker login -u <username> container-registry.oracle.com
+```
+
+### Oracle Instant Client RPMs
+Download the Oracle Instant Client 19.25 **32-bit** RPMs from:
+https://www.oracle.com/database/technologies/instant-client/linux-x86-32-downloads.html
+
+Place the `.rpm` files in `docker/instantclient/` before building images.
+
 ## Setup
 
 ```bash
 cp .env.example .env
-# edit .env — set ORACLE_PWD and DUMP_FILE
+# edit .env — set ORACLE_PWD, DUMP_FILE, and build args
+```
+
+## Building images
+
+```bash
+# Build the Oracle Instant Client base image (prerequisite for CGW, SES, MDE)
+docker compose build instantclient
+```
+
+## Running the database container
+
+```bash
+# Set ownership on the dumps directory so Oracle can write the import log
+sudo chown -R 54321:54321 dumps/
+
+# Place your Data Pump export file in ./dumps/
 cp /path/to/your/dumpfile.dmp dumps/
+
 docker compose up -d
 docker compose logs -f
 ```
@@ -22,13 +53,23 @@ Initial startup takes around 25-30 minutes for Oracle to create the database, th
 
 Setup scripts only run once. Subsequent container restarts skip them and start the already-provisioned database.
 
+## Verifying the import
+
+Connect to the database and run:
+```sql
+SELECT app_ver FROM siebel.s_app_ver;
+SELECT COUNT(*) FROM siebel.s_contact;
+```
+Expected: `v24.9` and `30981` respectively.
+
 ## Key things to know
 
 - Place your dump file in `./dumps/` and set `DUMP_FILE` in `.env` to match the filename before first start
-- If the first run fails mid-import (e.g. container crash), you need to drop the volume and start clean:
+- The `./dumps/` directory must be writable by the Oracle process (uid 54321) so impdp can write its log file — run `sudo chown -R 54321:54321 dumps/` before starting
+- If the first run fails mid-import (e.g. container crash), drop the volume and start clean:
   ```bash
   docker compose down -v
   docker compose up -d
   ```
-- The import log at `dumps/impdp_siebel.log` will show errors — some are expected (constraint violations, pre-existing objects). Verify the import succeeded by checking `siebel.s_app_ver` and `siebel.s_contact`
+- The import log at `dumps/impdp_siebel.log` will show errors — some are expected (grants to roles that don't exist in this environment). Verify with the queries above
 - `ENABLE_ARCHIVELOG` is hardcoded to `true` as it is required for Siebel

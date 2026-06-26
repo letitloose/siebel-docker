@@ -1,14 +1,25 @@
 services:
+  instantclient:
+    build:
+      context: ./docker/instantclient
+      args:
+        OL_VERSION: ${OL_VERSION}
+        ORACLE_IC_VERSION: ${ORACLE_IC_VERSION}
+        DB_HOST: ${DB_HOST}
+        DB_PORT: ${DB_PORT}
+        DB_SERVICE: ${DB_SERVICE}
+    image: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
+
   oracle19c:
     image: container-registry.oracle.com/database/enterprise_ru:latest-19
-    container_name: db19sbl249
-    hostname: db19sbl249
+    container_name: ${DB_HOST}
+    hostname: ${DB_HOST}
     networks:
       siebelnet:
         aliases:
-          - db19sbl249
+          - ${DB_HOST}
     ports:
-      - "1521:1521"
+      - "${DB_PORT}:1521"
       - "5500:5500"
     env_file: .env
     environment:
