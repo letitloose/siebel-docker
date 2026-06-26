@@ -11,10 +11,13 @@ docker login -u <username> container-registry.oracle.com
 ```
 
 ### Oracle Instant Client RPMs
-Download the Oracle Instant Client 19.25 **32-bit** RPMs from:
+Download the following Oracle Instant Client 19.31 **32-bit** RPMs from:
 https://www.oracle.com/database/technologies/instant-client/linux-x86-32-downloads.html
 
-Place the `.rpm` files in `docker/instantclient/` before building images.
+- `oracle-instantclient19.31-basic-19.31.0.0.0-1.i386.rpm`
+- `oracle-instantclient19.31-sqlplus-19.31.0.0.0-1.i386.rpm`
+
+Place both `.rpm` files in `docker/instantclient/` before building images.
 
 ## Setup
 
@@ -29,6 +32,16 @@ cp .env.example .env
 # Build the Oracle Instant Client base image (prerequisite for CGW, SES, MDE)
 docker compose build instantclient
 ```
+
+## Testing the database connection
+
+With the database container already running, verify the instantclient image can connect:
+
+```bash
+docker compose --profile test run --rm test-db
+```
+
+A successful connection prints `1` from `SELECT 1 FROM DUAL`. If the connection fails, check that `DB_HOST`, `DB_PORT`, and `DB_SERVICE` in `.env` match the running database container.
 
 ## Running the database container
 

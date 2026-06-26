@@ -10,6 +10,18 @@ services:
         DB_SERVICE: ${DB_SERVICE}
     image: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
 
+  test-db:
+    image: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
+    networks:
+      - siebelnet
+    environment:
+      ORACLE_PWD: ${ORACLE_PWD}
+    command: >
+      bash -c "echo 'SELECT 1 FROM DUAL;' |
+      sqlplus -S sys/${ORACLE_PWD}@//${DB_HOST}:${DB_PORT}/${DB_SERVICE} as sysdba"
+    profiles:
+      - test
+
   oracle19c:
     image: container-registry.oracle.com/database/enterprise_ru:latest-19
     container_name: ${DB_HOST}
