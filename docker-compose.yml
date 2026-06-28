@@ -55,6 +55,28 @@ services:
         AI_USER_PWD: ${AI_USER_PWD}
     image: ol8/siebel/sai-base:${SIEBEL_VERSION}np
 
+  mde:
+    build:
+      context: .
+      dockerfile: docker/mde/Dockerfile
+      args:
+        INSTANTCLIENT_IMAGE: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
+        SIEBEL_VERSION: ${SIEBEL_VERSION}
+        PKI_PWD: ${PKI_PWD}
+        PKI_DOMAIN: ${PKI_DOMAIN}
+        SES_HTTP_PORT: ${SES_HTTP_PORT:-5090}
+        SES_SHUTDOWN_PORT: ${SES_SHUTDOWN_PORT:-5092}
+        SES_REDIRECT_PORT: ${SES_REDIRECT_PORT:-5091}
+        AI_HTTP_PORT: ${AI_HTTP_PORT:-6090}
+        AI_SHUTDOWN_PORT: ${AI_SHUTDOWN_PORT:-6092}
+        AI_REDIRECT_PORT: ${AI_REDIRECT_PORT:-6091}
+        AI_USERNAME: ${AI_USERNAME:-SADMIN}
+        AI_USER_PWD: ${AI_USER_PWD}
+        GW_TLS_PORT: ${GW_TLS_PORT:-2320}
+        SIEBEL_ENTERPRISE: ${SIEBEL_ENTERPRISE:-dev01}
+        MDE_HOSTNAME: ${MDE_HOSTNAME:-dev01mde01}
+    image: ol8/siebel/mde-base:${SIEBEL_VERSION}np
+
   test-db:
     image: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
     networks:
