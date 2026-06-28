@@ -28,9 +28,16 @@ cp .env.example .env
 
 ## Building images
 
+Prerequisites:
+- Oracle Instant Client RPMs in `docker/instantclient/`
+- Siebel Enterprise Server installer extracted to `docker/Siebel_Enterprise_Server/`
+
 ```bash
-# Build the Oracle Instant Client base image (prerequisite for CGW, SES, MDE)
+# 1. Build the Oracle Instant Client base image (prerequisite for CGW, SES, MDE)
 docker compose build instantclient
+
+# 2. Build the Siebel Gateway (CGW) image
+docker compose build cgw
 ```
 
 ## Testing the database connection

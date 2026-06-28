@@ -3,3 +3,4 @@ oracle_data
 dumps/*.dmp
 dumps/*.log
 docker/**/*.rpm
+docker/Siebel_Enterprise_Server/

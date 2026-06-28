@@ -1,0 +1,41 @@
+# likely required from 24.10 onward
+
+readonly folderList=(
+        '/cfgtoollogs'
+        '/applicationcontainer_internal/logs'
+        '/gtwysrvr/log'
+        '/gtwysrvr/sys'
+        '/gtwysrvr/registry'
+);
+
+readonly fileList=(
+        '/EMdiscovery.properties'
+        '/applicationcontainer_internal/bin/SiebelApplicationContainer_InternalSiebel_Home__siebel_cgw.sh'
+        '/applicationcontainer_internal/bin/setenv.sh'
+        '/applicationcontainer_internal/bin/zookeeper.log'
+        '/applicationcontainer_internal/cloudgateway.log'
+        '/applicationcontainer_internal/conf/server.xml'
+        '/applicationcontainer_internal/siebelcerts/siebelkeystore.jks'
+        '/applicationcontainer_internal/webapps'
+        '/applicationcontainer_internal/webapps/bcgInfo.txt'
+        '/applicationcontainer_internal/webapps/gateway.properties'
+        '/delete_gatewayserver.resp'
+        '/deleteenterprise.resp'
+        '/enterpriseserver.resp'
+        '/gatewayserver.resp'
+        '/gtwysrvr/admin/siebns.dat'
+        '/gtwysrvr/admin/srvrdefs.run'
+        '/gtwysrvr/admin/srvrdefs.run.bak'
+        '/gtwysrvr/admin/srvrdefs_sia.run'
+        '/gtwysrvr/admin/srvrdefs_sia.run.bak'
+        '/gtwysrvr/admin/start_ns.tmpl'
+        '/gtwysrvr/bin/gateway.cfg'
+        '/gtwysrvr/metafile'
+        '/gtwysrvr/registry/conf/myid'
+        '/gtwysrvr/registry/conf/registry.cfg'
+        '/gtwysrvr/siebenv.csh'
+        '/gtwysrvr/siebenv.sh'
+        '/siebsrvr/bin/gateway.cfg'
+        '/siebsrvr/bin/start_ns'
+)
+

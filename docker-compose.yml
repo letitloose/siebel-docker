@@ -10,6 +10,20 @@ services:
         DB_SERVICE: ${DB_SERVICE}
     image: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
 
+  cgw:
+    build:
+      context: ./docker
+      dockerfile: cgw/Dockerfile
+      args:
+        INSTANTCLIENT_IMAGE: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
+        SIEBEL_VERSION: ${SIEBEL_VERSION}
+        PKI_PWD: ${PKI_PWD}
+        PKI_DOMAIN: ${PKI_DOMAIN}
+        GW_HTTP_PORT: ${GW_HTTP_PORT}
+        GW_SHUTDOWN_PORT: ${GW_SHUTDOWN_PORT}
+        GW_REDIRECT_PORT: ${GW_REDIRECT_PORT}
+    image: ol8/siebel/cgw-base:${SIEBEL_VERSION}np
+
   test-db:
     image: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
     networks:
