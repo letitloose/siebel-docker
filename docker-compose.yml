@@ -39,6 +39,22 @@ services:
         SES_REDIRECT_PORT: ${SES_REDIRECT_PORT:-5091}
     image: ol8/siebel/ses-base:${SIEBEL_VERSION}np
 
+  sai:
+    build:
+      context: .
+      dockerfile: docker/sai/Dockerfile
+      args:
+        OL_VERSION: ${OL_VERSION:-8}
+        SIEBEL_VERSION: ${SIEBEL_VERSION}
+        PKI_PWD: ${PKI_PWD}
+        PKI_DOMAIN: ${PKI_DOMAIN}
+        AI_HTTP_PORT: ${AI_HTTP_PORT:-6090}
+        AI_SHUTDOWN_PORT: ${AI_SHUTDOWN_PORT:-6092}
+        AI_REDIRECT_PORT: ${AI_REDIRECT_PORT:-6091}
+        AI_USERNAME: ${AI_USERNAME:-SADMIN}
+        AI_USER_PWD: ${AI_USER_PWD}
+    image: ol8/siebel/sai-base:${SIEBEL_VERSION}np
+
   test-db:
     image: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
     networks:

@@ -34,14 +34,40 @@ cp .env.example .env
 Prerequisites:
 - Oracle Instant Client RPMs in `software/instantclient/`
 - Siebel Enterprise Server installer extracted to `software/Siebel_Enterprise_Server/`
+- All required vars set in `.env`
+
+Build in order — each step depends on the previous:
 
 ```bash
-# 1. Build the Oracle Instant Client base image (prerequisite for CGW, SES, MDE)
+# 1. Oracle Instant Client base image (prerequisite for CGW, SES, MDE)
 docker compose build instantclient
 
-# 2. Build the Siebel Gateway (CGW) image
+# 2. Siebel Gateway
 docker compose build cgw
+
+# 3. Siebel Server
+docker compose build ses
+
+# 4. Siebel Application Interface
+docker compose build sai
+
+# 5. Siebel MDE (Modular Deployment Engine)
+docker compose build mde
 ```
+
+## Verifying images
+
+After building, run these to confirm each image installed correctly:
+
+```bash
+# Check version and response file for each component
+docker run --rm ol8/siebel/cgw-base:24.9np cat /siebel/cgw/Siebel_version.properties
+docker run --rm ol8/siebel/ses-base:24.9np cat /siebel/ses/Siebel_version.properties
+docker run --rm ol8/siebel/sai-base:24.9np cat /siebel/sai/Siebel_version.properties
+docker run --rm ol8/siebel/mde-base:24.9np cat /siebel/mde/Siebel_version.properties
+```
+
+All should report `SIEBEL_VERSION=24.9.0.0.0`.
 
 ## Testing the database connection
 
