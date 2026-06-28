@@ -17,7 +17,10 @@ https://www.oracle.com/database/technologies/instant-client/linux-x86-32-downloa
 - `oracle-instantclient19.31-basic-19.31.0.0.0-1.i386.rpm`
 - `oracle-instantclient19.31-sqlplus-19.31.0.0.0-1.i386.rpm`
 
-Place both `.rpm` files in `docker/instantclient/` before building images.
+Place both `.rpm` files in `software/instantclient/` before building images.
+
+### Siebel Enterprise Server installer
+Extract the Siebel 24.9 installer zip into `software/Siebel_Enterprise_Server/`. After extraction the directory should contain `Disk1/`.
 
 ## Setup
 
@@ -29,8 +32,8 @@ cp .env.example .env
 ## Building images
 
 Prerequisites:
-- Oracle Instant Client RPMs in `docker/instantclient/`
-- Siebel Enterprise Server installer extracted to `docker/Siebel_Enterprise_Server/`
+- Oracle Instant Client RPMs in `software/instantclient/`
+- Siebel Enterprise Server installer extracted to `software/Siebel_Enterprise_Server/`
 
 ```bash
 # 1. Build the Oracle Instant Client base image (prerequisite for CGW, SES, MDE)

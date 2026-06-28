@@ -8,14 +8,14 @@ ARG SIEBEL_UID=29263
 ARG SIEBEL_GID=29263
 ARG PKI_PWD
 ARG PKI_DOMAIN=company.com
-ARG GW_HTTP_PORT=4091
-ARG GW_SHUTDOWN_PORT=4092
-ARG GW_REDIRECT_PORT=4090
+ARG SES_HTTP_PORT=5090
+ARG SES_SHUTDOWN_PORT=5092
+ARG SES_REDIRECT_PORT=5091
 
-COPY docker/cgw/config/ /config/
+COPY docker/ses/config/ /config/
 COPY software/Siebel_Enterprise_Server /mnt/Siebel_Enterprise_Server/
 
-RUN mkdir -p -m a+rwx /siebel/cgw /siebel/oraInventory /stage \
+RUN mkdir -p -m a+rwx /siebel/ses /siebel/oraInventory /stage \
     && groupadd -g ${SIEBEL_GID} ${SIEBEL_GROUP} \
     && useradd -m -g ${SIEBEL_GROUP} -G ${SIEBEL_GROUP} -u ${SIEBEL_UID} ${SIEBEL_USER} \
     && dnf -y update libstdc++.x86_64 \
@@ -64,7 +64,7 @@ RUN mkdir -p -m a+rwx /siebel/cgw /siebel/oraInventory /stage \
     && dnf clean all \
     && rm -rf /var/cache/yum/x86_64 /var/cache/yum/i686 \
     \
-    # Generate self-signed keystore (mirrors the pki-generate-role-docker Ansible role)
+    # Generate self-signed keystore
     && PKI_DIR=/tmp/pki \
     && mkdir -p ${PKI_DIR}/keys ${PKI_DIR}/ca \
     && printf 'basicConstraints=CA:FALSE\nsubjectAltName=@alt_names\n[alt_names]\nDNS.1 = *.%s\n' "${PKI_DOMAIN}" > ${PKI_DIR}/hosts_fqdn.txt \
@@ -112,10 +112,10 @@ RUN mkdir -p -m a+rwx /siebel/cgw /siebel/oraInventory /stage \
     # Substitute encrypted password and ports into the response file
     && sed -i \
         -e "s|@@PKI_PWD_ENCRYPTED@@|${PKI_ENCRYPTED}|g" \
-        -e "s|@@GW_HTTP_PORT@@|${GW_HTTP_PORT}|g" \
-        -e "s|@@GW_SHUTDOWN_PORT@@|${GW_SHUTDOWN_PORT}|g" \
-        -e "s|@@GW_REDIRECT_PORT@@|${GW_REDIRECT_PORT}|g" \
-        /config/cgw.rsp \
+        -e "s|@@SES_HTTP_PORT@@|${SES_HTTP_PORT}|g" \
+        -e "s|@@SES_SHUTDOWN_PORT@@|${SES_SHUTDOWN_PORT}|g" \
+        -e "s|@@SES_REDIRECT_PORT@@|${SES_REDIRECT_PORT}|g" \
+        /config/ses.rsp \
     \
     # Run the Siebel silent installer
     && chown -R ${SIEBEL_USER}:${SIEBEL_GROUP} /mnt/Siebel_Enterprise_Server /siebel \
@@ -124,7 +124,7 @@ RUN mkdir -p -m a+rwx /siebel/cgw /siebel/oraInventory /stage \
     # Clean up installer and temp files
     && rm -rf /mnt/Siebel_Enterprise_Server/ ${PKI_DIR} \
     && sleep 30 \
-    && chmod -R 755 /siebel/cgw
+    && chmod -R 755 /siebel/ses
 
 ENV RESOLV_MULTI=off \
     LANG=en_US.UTF-8 \

@@ -14,7 +14,7 @@ ARG DB_HOST
 ARG DB_PORT
 ARG DB_SERVICE
 
-COPY *.rpm /
+COPY software/instantclient/*.rpm /
 
 RUN microdnf -y install \
         ksh \

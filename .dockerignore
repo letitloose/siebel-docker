@@ -1,0 +1,8 @@
+.git
+.env
+dumps/
+init-scripts/
+README.md
+.env.example
+.gitignore
+.dockerignore

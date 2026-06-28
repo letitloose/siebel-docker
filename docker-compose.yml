@@ -1,7 +1,8 @@
 services:
   instantclient:
     build:
-      context: ./docker/instantclient
+      context: .
+      dockerfile: docker/instantclient/Dockerfile
       args:
         OL_VERSION: ${OL_VERSION}
         ORACLE_IC_VERSION: ${ORACLE_IC_VERSION}
@@ -12,17 +13,31 @@ services:
 
   cgw:
     build:
-      context: ./docker
-      dockerfile: cgw/Dockerfile
+      context: .
+      dockerfile: docker/cgw/Dockerfile
       args:
         INSTANTCLIENT_IMAGE: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
         SIEBEL_VERSION: ${SIEBEL_VERSION}
         PKI_PWD: ${PKI_PWD}
         PKI_DOMAIN: ${PKI_DOMAIN}
-        GW_HTTP_PORT: ${GW_HTTP_PORT}
-        GW_SHUTDOWN_PORT: ${GW_SHUTDOWN_PORT}
-        GW_REDIRECT_PORT: ${GW_REDIRECT_PORT}
+        GW_HTTP_PORT: ${GW_HTTP_PORT:-4091}
+        GW_SHUTDOWN_PORT: ${GW_SHUTDOWN_PORT:-4092}
+        GW_REDIRECT_PORT: ${GW_REDIRECT_PORT:-4090}
     image: ol8/siebel/cgw-base:${SIEBEL_VERSION}np
+
+  ses:
+    build:
+      context: .
+      dockerfile: docker/ses/Dockerfile
+      args:
+        INSTANTCLIENT_IMAGE: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
+        SIEBEL_VERSION: ${SIEBEL_VERSION}
+        PKI_PWD: ${PKI_PWD}
+        PKI_DOMAIN: ${PKI_DOMAIN}
+        SES_HTTP_PORT: ${SES_HTTP_PORT:-5090}
+        SES_SHUTDOWN_PORT: ${SES_SHUTDOWN_PORT:-5092}
+        SES_REDIRECT_PORT: ${SES_REDIRECT_PORT:-5091}
+    image: ol8/siebel/ses-base:${SIEBEL_VERSION}np
 
   test-db:
     image: ol8/instantclient/32bit:${ORACLE_IC_VERSION}

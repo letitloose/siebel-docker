@@ -2,5 +2,5 @@ oracle_data
 .env
 dumps/*.dmp
 dumps/*.log
-docker/**/*.rpm
-docker/Siebel_Enterprise_Server/
+software/instantclient/*.rpm
+software/Siebel_Enterprise_Server/
