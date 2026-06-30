@@ -4,3 +4,14 @@ dumps/*.dmp
 dumps/*.log
 software/instantclient/*.rpm
 software/Siebel_Enterprise_Server/
+
+siebel-volumes/CGW01/*
+siebel-volumes/SES01/*
+siebel-volumes/SAI01/*
+siebel-volumes/MDE01/*
+siebel-volumes/SFS/*
+!siebel-volumes/CGW01/.gitkeep
+!siebel-volumes/SES01/.gitkeep
+!siebel-volumes/SAI01/.gitkeep
+!siebel-volumes/MDE01/.gitkeep
+!siebel-volumes/SFS/.gitkeep

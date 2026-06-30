@@ -122,3 +122,29 @@ Expected: `v24.9` and `30981` respectively.
   ```
 - The import log at `dumps/impdp_siebel.log` will show errors — some are expected (grants to roles that don't exist in this environment). Verify with the queries above
 - `ENABLE_ARCHIVELOG` is hardcoded to `true` as it is required for Siebel
+
+## Running the Siebel containers
+
+Each component's persistent volume must be owned by the `oracle` user (uid/gid 29263, matching the build-time `SIEBEL_UID`/`SIEBEL_GID`) before first start, since the containers write configuration and logs there as that user:
+
+```bash
+sudo chown -R 29263:29263 siebel-volumes/
+```
+
+Then start all four containers:
+
+```bash
+docker compose up -d cgw ses sai mde
+docker compose ps
+```
+
+The containers start with `/bin/bash` and stay running via an attached tty — none of the Siebel services (gateway, server, AI) start automatically. That bootstrap sequence is covered separately (see "Deploying the Siebel enterprise" below, once added).
+
+Containers and their network aliases (all on the `siebelnet` network, resolvable by other containers as `<name>.<PKI_DOMAIN>`):
+
+| Service | Container name | Exposed ports |
+|---|---|---|
+| cgw | `${CGW_HOSTNAME}` | none |
+| ses | `${SES_HOSTNAME}` | none |
+| sai | `${SAI_HOSTNAME}` | 443 → 6091 |
+| mde | `${MDE_HOSTNAME}` | 4443 → 6091, 2322 → 2322 |
