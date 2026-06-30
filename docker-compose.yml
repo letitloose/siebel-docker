@@ -18,6 +18,8 @@ services:
       args:
         INSTANTCLIENT_IMAGE: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
         SIEBEL_VERSION: ${SIEBEL_VERSION}
+        SIEBEL_UID: ${SIEBEL_UID}
+        SIEBEL_GID: ${SIEBEL_GID}
         PKI_PWD: ${PKI_PWD}
         PKI_DOMAIN: ${PKI_DOMAIN}
         GW_HTTP_PORT: ${GW_HTTP_PORT:-4091}
@@ -47,6 +49,8 @@ services:
       args:
         INSTANTCLIENT_IMAGE: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
         SIEBEL_VERSION: ${SIEBEL_VERSION}
+        SIEBEL_UID: ${SIEBEL_UID}
+        SIEBEL_GID: ${SIEBEL_GID}
         PKI_PWD: ${PKI_PWD}
         PKI_DOMAIN: ${PKI_DOMAIN}
         SES_HTTP_PORT: ${SES_HTTP_PORT:-5090}
@@ -76,6 +80,8 @@ services:
       args:
         OL_VERSION: ${OL_VERSION:-8}
         SIEBEL_VERSION: ${SIEBEL_VERSION}
+        SIEBEL_UID: ${SIEBEL_UID}
+        SIEBEL_GID: ${SIEBEL_GID}
         PKI_PWD: ${PKI_PWD}
         PKI_DOMAIN: ${PKI_DOMAIN}
         AI_HTTP_PORT: ${AI_HTTP_PORT:-6090}
@@ -94,7 +100,7 @@ services:
     tty: true
     stdin_open: true
     ports:
-      - "443:6091"
+      - "443:${AI_REDIRECT_PORT:-6091}"
     volumes:
       - ./siebel-volumes/SAI01:/persistent
       - ./siebel-volumes/SFS:/sfs
@@ -107,6 +113,8 @@ services:
       args:
         INSTANTCLIENT_IMAGE: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
         SIEBEL_VERSION: ${SIEBEL_VERSION}
+        SIEBEL_UID: ${SIEBEL_UID}
+        SIEBEL_GID: ${SIEBEL_GID}
         PKI_PWD: ${PKI_PWD}
         PKI_DOMAIN: ${PKI_DOMAIN}
         SES_HTTP_PORT: ${SES_HTTP_PORT:-5090}
@@ -131,8 +139,8 @@ services:
     tty: true
     stdin_open: true
     ports:
-      - "4443:6091"
-      - "2322:2322"
+      - "4443:${AI_REDIRECT_PORT:-6091}"
+      - "${GW_REGISTRY_PORT:-2322}:${GW_REGISTRY_PORT:-2322}"
     volumes:
       - ./siebel-volumes/MDE01:/persistent
       - ./siebel-volumes/SFS:/sfs

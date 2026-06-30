@@ -97,7 +97,7 @@ Initial startup takes around 25-30 minutes for Oracle to create the database, th
 ## What happens on first start
 
 1. Oracle creates the ORCLCDB database
-2. `01-setup.sql` runs — switches to ORCLPDB1, creates tablespaces, roles, users, and a directory object pointing to `./dumps/`
+2. `01-setup.sh` runs — renders `01-setup.sql.template` with `AI_USER_PWD`/`SIEBEL_ANON_PWD` from `.env`, then executes it: switches to ORCLPDB1, creates tablespaces, roles, users, and a directory object pointing to `./dumps/`
 3. `02-import.sh` runs — imports the SIEBEL schema using `impdp`; import log is written to `dumps/impdp_siebel.log`
 
 Setup scripts only run once. Subsequent container restarts skip them and start the already-provisioned database.
@@ -122,6 +122,8 @@ Expected: `v24.9` and `30981` respectively.
   ```
 - The import log at `dumps/impdp_siebel.log` will show errors — some are expected (grants to roles that don't exist in this environment). Verify with the queries above
 - `ENABLE_ARCHIVELOG` is hardcoded to `true` as it is required for Siebel
+- The `sadmin`/`guestcst` database passwords are rendered from `AI_USER_PWD`/`SIEBEL_ANON_PWD` in `.env` at first startup (`01-setup.sh` renders `01-setup.sql.template`) — there's a single source of truth, so they can't drift out of sync with what the bootstrap script and the SAI/MDE images use
+- If you change `AI_USER_PWD` or `SIEBEL_ANON_PWD` *after* the database has already been created, the new value won't retroactively apply — update the live database with `ALTER USER sadmin IDENTIFIED BY "<value>";` (and `guestcst` similarly), or drop the `oracle_data` volume and let it re-provision from scratch
 
 ## Running the Siebel containers
 
@@ -138,7 +140,7 @@ docker compose up -d cgw ses sai mde
 docker compose ps
 ```
 
-The containers start with `/bin/bash` and stay running via an attached tty — none of the Siebel services (gateway, server, AI) start automatically. That bootstrap sequence is covered separately (see "Deploying the Siebel enterprise" below, once added).
+The containers start with `/bin/bash` and stay running via an attached tty — none of the Siebel services (gateway, server, AI) start automatically. That happens in the bootstrap step below.
 
 Containers and their network aliases (all on the `siebelnet` network, resolvable by other containers as `<name>.<PKI_DOMAIN>`):
 
@@ -148,3 +150,21 @@ Containers and their network aliases (all on the `siebelnet` network, resolvable
 | ses | `${SES_HOSTNAME}` | none |
 | sai | `${SAI_HOSTNAME}` | 443 → 6091 |
 | mde | `${MDE_HOSTNAME}` | 4443 → 6091, 2322 → 2322 |
+
+## Bootstrapping the Siebel enterprise
+
+With the database imported (see above) and the `mde` container running, bootstrap the Siebel enterprise — this configures the gateway, creates the Enterprise/Server/AI profiles, and deploys them. It's the step that turns "Siebel is installed" into "Siebel is running and reachable in a browser."
+
+Make sure these are set in `.env` first: `SIEBEL_PRIMARY_LANG`, `GW_REGISTRY_PORT`, `SIEBEL_ANON_PWD`.
+
+```bash
+./scripts/bootstrap-mde.sh
+```
+
+This is a first-time-only operation — see [docs/bootstrap.md](docs/bootstrap.md) for what it does, why it's structured as a host-side script, and what to do if it fails partway through.
+
+Once it completes, Siebel is reachable at:
+```
+https://localhost/siebel/app/<application>/<language>
+```
+e.g. `https://localhost/siebel/app/callcenter/enu`
