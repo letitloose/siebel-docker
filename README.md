@@ -165,6 +165,30 @@ This is a first-time-only operation — see [docs/bootstrap.md](docs/bootstrap.m
 
 Once it completes, Siebel is reachable at:
 ```
-https://localhost/siebel/app/<application>/<language>
+https://localhost:4443/siebel/app/<application>/<language>
 ```
-e.g. `https://localhost/siebel/app/callcenter/enu`
+e.g. `https://localhost:4443/siebel/app/publicsector/enu`
+
+Note: port 4443 is MDE's published AI port. Port 443 maps to the SAI container which is built but not bootstrapped in this setup.
+
+## Custom web assets (CSS / JS / images)
+
+The MDE container's Tomcat web root is bind-mounted from `siebel-webroot/` in the project directory:
+
+```
+siebel-webroot/     →   /siebel/mde/applicationcontainer_external/siebelwebroot/
+  enu/                  Language-specific templates
+  files/                Downloadable files
+  images/               UI images
+  scripts/              JavaScript
+  htmltemplates/        HTML page templates
+  fonts/                Web fonts
+```
+
+To update: edit files in `siebel-webroot/` on the host — changes are served immediately with no container restart needed. `siebel-webroot/` is gitignored since it contains the full Siebel web root (~330MB). To restore it, extract your `siebelwebroot_Backup.zip` into the project root and flatten the top-level directory:
+
+```bash
+unzip siebelwebroot_Backup.zip -d siebel-webroot/
+mv siebel-webroot/siebelwebroot_Backup/* siebel-webroot/
+rmdir siebel-webroot/siebelwebroot_Backup
+```

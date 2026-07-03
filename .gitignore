@@ -4,6 +4,7 @@ dumps/*.dmp
 dumps/*.log
 software/instantclient/*.rpm
 software/Siebel_Enterprise_Server/
+siebel-webroot/
 
 siebel-volumes/CGW01/*
 siebel-volumes/SES01/*

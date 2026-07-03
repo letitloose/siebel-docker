@@ -144,6 +144,7 @@ services:
     volumes:
       - ./siebel-volumes/MDE01:/persistent
       - ./siebel-volumes/SFS:/sfs
+      - ./siebel-webroot:/siebel/mde/applicationcontainer_external/siebelwebroot
     environment:
       sesServerName: MDE01
     depends_on:
