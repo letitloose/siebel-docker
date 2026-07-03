@@ -157,11 +157,17 @@ With the database imported (see above) and the `mde` container running, bootstra
 
 Make sure these are set in `.env` first: `SIEBEL_PRIMARY_LANG`, `GW_REGISTRY_PORT`, `SIEBEL_ANON_PWD`.
 
+**Linux / macOS:**
 ```bash
 ./scripts/bootstrap-mde.sh
 ```
 
-This is a first-time-only operation — see [docs/bootstrap.md](docs/bootstrap.md) for what it does, why it's structured as a host-side script, and what to do if it fails partway through.
+**Windows (PowerShell):**
+```powershell
+.\scripts\bootstrap-mde.ps1
+```
+
+This is a re-runnable, idempotent operation — see [docs/bootstrap.md](docs/bootstrap.md) for what it does, timing expectations (~35 min), and troubleshooting.
 
 Once it completes, Siebel is reachable at:
 ```
