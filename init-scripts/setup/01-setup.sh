@@ -13,7 +13,7 @@
 # so the rendered file (and the plaintext password it contains) never
 # touches the host filesystem.
 
-TEMPLATE="$(dirname "$0")/01-setup.sql.template"
+TEMPLATE="$(dirname "${BASH_SOURCE[0]}")/01-setup.sql.template"
 RENDERED=/tmp/01-setup-rendered.sql
 
 sed \
