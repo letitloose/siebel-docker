@@ -5,8 +5,7 @@ ALTER SESSION SET CONTAINER = ORCLPDB1;
 ALTER SESSION SET "_oracle_script" = TRUE;
 
 -- Expose the host dumps bind-mount as an Oracle directory so impdp can read it
-CREATE OR REPLACE DIRE
-CTORY siebel_dumps AS '/opt/oracle/dumps';
+CREATE OR REPLACE DIRECTORY siebel_dumps AS '/opt/oracle/dumps';
 GRANT READ, WRITE ON DIRECTORY siebel_dumps TO sys;
 
 CREATE TABLESPACE siebel_data

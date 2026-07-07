@@ -28,6 +28,9 @@ CURL_MAX_TIME=30
 # as constants rather than .env variables.
 SIEBEL_TABLEOWNER=SIEBEL
 SIEBEL_ANON_USER=GUESTCST
+# Expected number of '. . imported' lines in the impdp log for Siebel 24.9.
+# Update if you switch to a different dump version.
+IMPORT_OBJECT_TOTAL=5665
 
 # Performs a curl request against the Cloud Gateway API and prints the
 # response. -k is required because the server uses the self-signed
@@ -82,10 +85,20 @@ wait_for_deployed() {
 
 echo "==> Recreating the mde container for a guaranteed clean starting state"
 docker compose up -d --force-recreate mde
-echo "==> Waiting for the database to report healthy"
-until [ "$(docker inspect --format='{{.State.Health.Status}}' "${DB_HOST}" 2>/dev/null)" = "healthy" ]; do
-    sleep 5
+echo "==> Waiting for Siebel schema to be ready"
+echo "    On first run this takes ~2 hours (DB creation + schema import). Polling every 5 minutes..."
+until docker compose exec -T oracle19c bash -c \
+    "echo 'SELECT count(*) FROM siebel.s_app_ver;' | timeout 30 sqlplus -s sys/${ORACLE_PWD}@//localhost:1521/ORCLPDB1 as sysdba" \
+    2>/dev/null | grep -qE '^[[:space:]]*[1-9][0-9]*[[:space:]]*$'; do
+    imported=$(docker compose exec -T oracle19c grep -c '. . imported' /opt/oracle/dumps/impdp_siebel.log 2>/dev/null || echo 0)
+    last_obj=$(docker compose logs oracle19c 2>/dev/null \
+        | grep "Processing object type" | tail -1 \
+        | sed 's/.*Processing object type //') || true
+    echo "    [$(date '+%H:%M:%S')] ${imported}/${IMPORT_OBJECT_TOTAL} objects imported — phase: ${last_obj:-waiting for import to start}"
+    echo "                    Next check in 5 minutes..."
+    sleep 300
 done
+echo "    [$(date '+%H:%M:%S')] Siebel schema ready."
 
 echo "==> Starting MDE internal and external Tomcat"
 docker compose exec -T --workdir /config mde bash ./start_ai_internal.sh

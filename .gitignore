@@ -1,10 +1,10 @@
 oracle_data
 .env
-dumps/*.dmp
-dumps/*.log
+data/dumps/*.dmp
+data/dumps/*.log
+data/webroot/
 software/instantclient/*.rpm
 software/Siebel_Enterprise_Server/
-siebel-webroot/
 
 siebel-volumes/CGW01/*
 siebel-volumes/SES01/*

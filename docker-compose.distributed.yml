@@ -11,10 +11,43 @@ services:
         DB_SERVICE: ${DB_SERVICE}
     image: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
 
-  mde:
+  cgw:
     build:
       context: .
-      dockerfile: docker/mde/Dockerfile
+      dockerfile: docker/cgw/Dockerfile
+      args:
+        INSTANTCLIENT_IMAGE: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
+        SIEBEL_VERSION: ${SIEBEL_VERSION}
+        SIEBEL_UID: ${SIEBEL_UID}
+        SIEBEL_GID: ${SIEBEL_GID}
+        PKI_PWD: ${PKI_PWD}
+        PKI_DOMAIN: ${PKI_DOMAIN}
+        GW_HTTP_PORT: ${GW_HTTP_PORT:-4091}
+        GW_SHUTDOWN_PORT: ${GW_SHUTDOWN_PORT:-4092}
+        GW_REDIRECT_PORT: ${GW_REDIRECT_PORT:-4090}
+    image: ol8/siebel/cgw-base:${SIEBEL_VERSION}np
+    container_name: ${CGW_HOSTNAME}
+    hostname: ${CGW_HOSTNAME}
+    networks:
+      siebelnet:
+        aliases:
+          - ${CGW_HOSTNAME}.${PKI_DOMAIN}
+    user: "${SIEBEL_UID}:${SIEBEL_GID}"
+    tty: true
+    stdin_open: true
+    ports:
+      - "${GW_REGISTRY_PORT:-2322}:${GW_REGISTRY_PORT:-2322}"
+    volumes:
+      - ./siebel-volumes/CGW01:/persistent
+      - ./siebel-volumes/SFS:/sfs
+    depends_on:
+      - oracle19c
+    restart: unless-stopped
+
+  ses:
+    build:
+      context: .
+      dockerfile: docker/ses/Dockerfile
       args:
         INSTANTCLIENT_IMAGE: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
         SIEBEL_VERSION: ${SIEBEL_VERSION}
@@ -25,33 +58,55 @@ services:
         SES_HTTP_PORT: ${SES_HTTP_PORT:-5090}
         SES_SHUTDOWN_PORT: ${SES_SHUTDOWN_PORT:-5092}
         SES_REDIRECT_PORT: ${SES_REDIRECT_PORT:-5091}
+    image: ol8/siebel/ses-base:${SIEBEL_VERSION}np
+    container_name: ${SES_HOSTNAME}
+    hostname: ${SES_HOSTNAME}
+    networks:
+      siebelnet:
+        aliases:
+          - ${SES_HOSTNAME}.${PKI_DOMAIN}
+    user: "${SIEBEL_UID}:${SIEBEL_GID}"
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./siebel-volumes/SES01:/persistent
+      - ./siebel-volumes/SFS:/sfs
+    depends_on:
+      - oracle19c
+    restart: unless-stopped
+
+  sai:
+    build:
+      context: .
+      dockerfile: docker/sai/Dockerfile
+      args:
+        OL_VERSION: ${OL_VERSION:-8}
+        SIEBEL_VERSION: ${SIEBEL_VERSION}
+        SIEBEL_UID: ${SIEBEL_UID}
+        SIEBEL_GID: ${SIEBEL_GID}
+        PKI_PWD: ${PKI_PWD}
+        PKI_DOMAIN: ${PKI_DOMAIN}
         AI_HTTP_PORT: ${AI_HTTP_PORT:-6090}
         AI_SHUTDOWN_PORT: ${AI_SHUTDOWN_PORT:-6092}
         AI_REDIRECT_PORT: ${AI_REDIRECT_PORT:-6091}
         AI_USERNAME: ${AI_USERNAME:-SADMIN}
         AI_USER_PWD: ${AI_USER_PWD}
-        GW_TLS_PORT: ${GW_TLS_PORT:-2320}
-        SIEBEL_ENTERPRISE: ${SIEBEL_ENTERPRISE:-dev01}
-        MDE_HOSTNAME: ${MDE_HOSTNAME:-dev01mde01}
-    image: ol8/siebel/mde-base:${SIEBEL_VERSION}np
-    container_name: ${MDE_HOSTNAME}
-    hostname: ${MDE_HOSTNAME}
+    image: ol8/siebel/sai-base:${SIEBEL_VERSION}np
+    container_name: ${SAI_HOSTNAME}
+    hostname: ${SAI_HOSTNAME}
     networks:
       siebelnet:
         aliases:
-          - ${MDE_HOSTNAME}.${PKI_DOMAIN}
+          - ${SAI_HOSTNAME}.${PKI_DOMAIN}
     user: "${SIEBEL_UID}:${SIEBEL_GID}"
     tty: true
     stdin_open: true
     ports:
-      - "4443:${AI_REDIRECT_PORT:-6091}"
-      - "${GW_REGISTRY_PORT:-2322}:${GW_REGISTRY_PORT:-2322}"
+      - "443:${AI_REDIRECT_PORT:-6091}"
     volumes:
-      - ./siebel-volumes/MDE01:/persistent
+      - ./siebel-volumes/SAI01:/persistent
       - ./siebel-volumes/SFS:/sfs
-      - ./data/webroot:/siebel/mde/applicationcontainer_external/siebelwebroot
-    environment:
-      sesServerName: MDE01
+      - ./data/webroot:/siebel/sai/applicationcontainer_external/siebelwebroot
     depends_on:
       - oracle19c
     restart: unless-stopped

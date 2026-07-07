@@ -1,200 +1,211 @@
 # siebel-docker
 
-Docker Compose setup for a Siebel CRM environment, starting with an Oracle 19c database container pre-loaded with a Siebel schema via Data Pump import.
+Single-machine Siebel CRM 24.9 stack running in Docker Compose. One MDE container (Gateway + Server + Application Interface combined) backed by Oracle 19c Enterprise.
+
+For a distributed 4-container setup (separate CGW, SES, SAI), see [docs/distributed.md](docs/distributed.md).
+
+---
 
 ## Prerequisites
 
-### Oracle Container Registry
-Create an account on container-registry.oracle.com and generate a token, then log in:
+- Docker Desktop (Mac / Windows) or Docker Engine + Compose plugin v2 (Linux)
+- Windows: Docker Desktop with WSL2 backend enabled, PowerShell 5.1+
+- A free account on [container-registry.oracle.com](https://container-registry.oracle.com) to pull the Oracle 19c image
+
+---
+
+## Getting started
+
+### 1. Clone the repo
+
 ```bash
-docker login -u <username> container-registry.oracle.com
+git clone <repo-url> siebel-docker
+cd siebel-docker
 ```
 
-### Oracle Instant Client RPMs
-Download the following Oracle Instant Client 19.31 **32-bit** RPMs from:
-https://www.oracle.com/database/technologies/instant-client/linux-x86-32-downloads.html
+### 2. Log in to Oracle Container Registry
 
+```bash
+docker login container-registry.oracle.com
+```
+
+Accept the Oracle Database licence in your account at container-registry.oracle.com → Database → enterprise (you only need to do this once).
+
+### 3. Add the Oracle Instant Client RPMs
+
+Download the **32-bit** Oracle Instant Client 19.31 RPMs from Oracle's website:
+
+> Database → Technologies → Instant Client → Linux x86 32-bit
+
+Files needed:
 - `oracle-instantclient19.31-basic-19.31.0.0.0-1.i386.rpm`
 - `oracle-instantclient19.31-sqlplus-19.31.0.0.0-1.i386.rpm`
 
-Place both `.rpm` files in `software/instantclient/` before building images.
+Place both files in `software/instantclient/`.
 
-### Siebel Enterprise Server installer
-Extract the Siebel 24.9 installer zip into `software/Siebel_Enterprise_Server/`. After extraction the directory should contain `Disk1/`.
+### 4. Add the Siebel Enterprise Server installer
 
-## Setup
+Extract your Siebel 24.9 installer zip into `software/Siebel_Enterprise_Server/`. The directory must contain `Disk1/` after extraction.
+
+### 5. Add the database dump
+
+```bash
+cp /path/to/your/export.dmp data/dumps/
+```
+
+Set `DUMP_FILE` in `.env` (next step) to match the filename. Ownership on `data/dumps/` is handled automatically by `start.sh` (Linux) — see the note in `start.ps1` for Windows.
+
+### 6. Add the web assets
+
+Extract your `siebelwebroot_Backup.zip` into `data/webroot/`:
+
+```bash
+unzip siebelwebroot_Backup.zip -d data/webroot/
+mv data/webroot/siebelwebroot_Backup/* data/webroot/
+rmdir data/webroot/siebelwebroot_Backup
+```
+
+The `data/webroot/` directory is bind-mounted into the MDE container. Changes on the host are served immediately with no container restart needed.
+
+### 7. Configure .env
 
 ```bash
 cp .env.example .env
-# edit .env — set ORACLE_PWD, DUMP_FILE, and build args
+# edit .env
 ```
 
-## Building images
+**Values you must set:**
 
-Prerequisites:
-- Oracle Instant Client RPMs in `software/instantclient/`
-- Siebel Enterprise Server installer extracted to `software/Siebel_Enterprise_Server/`
-- All required vars set in `.env`
+| Variable | What it is |
+|---|---|
+| `ORACLE_PWD` | Password for the Oracle SYS / SYSTEM accounts — set to anything |
+| `AI_USER_PWD` | Siebel SADMIN password — **must match the value stored in your DB dump** |
+| `SIEBEL_ANON_PWD` | Siebel GUESTCST (anonymous) password — **must match the value in your DB dump** |
+| `PKI_PWD` | SSL keystore password — set to anything secure |
+| `PKI_DOMAIN` | Your domain, e.g. `company.com` — used in TLS certificate SANs |
+| `DUMP_FILE` | Filename of your `.dmp` file as placed in `data/dumps/` |
+| `MDE_HOSTNAME` | Hostname for the MDE container, e.g. `dev01mde01` |
+| `SIEBEL_ENTERPRISE` | Name for the Siebel enterprise, e.g. `dev01` |
 
-Build in order — each step depends on the previous:
+Everything else can stay at its default for a first run. See the [full variable reference](#env-variable-reference) below.
 
-```bash
-# 1. Oracle Instant Client base image (prerequisite for CGW, SES, MDE)
-docker compose build instantclient
+### 8. Run the start script
 
-# 2. Siebel Gateway
-docker compose build cgw
-
-# 3. Siebel Server
-docker compose build ses
-
-# 4. Siebel Application Interface
-docker compose build sai
-
-# 5. Siebel MDE (Modular Deployment Engine)
-docker compose build mde
-```
-
-## Verifying images
-
-After building, run these to confirm each image installed correctly:
-
-```bash
-# Check version and response file for each component
-docker run --rm ol8/siebel/cgw-base:24.9np cat /siebel/cgw/Siebel_version.properties
-docker run --rm ol8/siebel/ses-base:24.9np cat /siebel/ses/Siebel_version.properties
-docker run --rm ol8/siebel/sai-base:24.9np cat /siebel/sai/Siebel_version.properties
-docker run --rm ol8/siebel/mde-base:24.9np cat /siebel/mde/Siebel_version.properties
-```
-
-All should report `SIEBEL_VERSION=24.9.0.0.0`.
-
-## Testing the database connection
-
-With the database container already running, verify the instantclient image can connect:
-
-```bash
-docker compose --profile test run --rm test-db
-```
-
-A successful connection prints `1` from `SELECT 1 FROM DUAL`. If the connection fails, check that `DB_HOST`, `DB_PORT`, and `DB_SERVICE` in `.env` match the running database container.
-
-## Running the database container
-
-```bash
-# Set ownership on the dumps directory so Oracle can write the import log
-sudo chown -R 54321:54321 dumps/
-
-# Place your Data Pump export file in ./dumps/
-cp /path/to/your/dumpfile.dmp dumps/
-
-docker compose up -d
-docker compose logs -f
-```
-
-Initial startup takes around 25-30 minutes for Oracle to create the database, then a further 2-3 hours for the Data Pump import to complete.
-
-## What happens on first start
-
-1. Oracle creates the ORCLCDB database
-2. `01-setup.sh` runs — renders `01-setup.sql.template` with `AI_USER_PWD`/`SIEBEL_ANON_PWD` from `.env`, then executes it: switches to ORCLPDB1, creates tablespaces, roles, users, and a directory object pointing to `./dumps/`
-3. `02-import.sh` runs — imports the SIEBEL schema using `impdp`; import log is written to `dumps/impdp_siebel.log`
-
-Setup scripts only run once. Subsequent container restarts skip them and start the already-provisioned database.
-
-## Verifying the import
-
-Connect to the database and run:
-```sql
-SELECT app_ver FROM siebel.s_app_ver;
-SELECT COUNT(*) FROM siebel.s_contact;
-```
-Expected: `v24.9` and `30981` respectively.
-
-## Key things to know
-
-- Place your dump file in `./dumps/` and set `DUMP_FILE` in `.env` to match the filename before first start
-- The `./dumps/` directory must be writable by the Oracle process (uid 54321) so impdp can write its log file — run `sudo chown -R 54321:54321 dumps/` before starting
-- If the first run fails mid-import (e.g. container crash), drop the volume and start clean:
-  ```bash
-  docker compose down -v
-  docker compose up -d
-  ```
-- The import log at `dumps/impdp_siebel.log` will show errors — some are expected (grants to roles that don't exist in this environment). Verify with the queries above
-- `ENABLE_ARCHIVELOG` is hardcoded to `true` as it is required for Siebel
-- The `sadmin`/`guestcst` database passwords are rendered from `AI_USER_PWD`/`SIEBEL_ANON_PWD` in `.env` at first startup (`01-setup.sh` renders `01-setup.sql.template`) — there's a single source of truth, so they can't drift out of sync with what the bootstrap script and the SAI/MDE images use
-- If you change `AI_USER_PWD` or `SIEBEL_ANON_PWD` *after* the database has already been created, the new value won't retroactively apply — update the live database with `ALTER USER sadmin IDENTIFIED BY "<value>";` (and `guestcst` similarly), or drop the `oracle_data` volume and let it re-provision from scratch
-
-## Running the Siebel containers
-
-Each component's persistent volume must be owned by the `oracle` user (uid/gid 29263, matching the build-time `SIEBEL_UID`/`SIEBEL_GID`) before first start, since the containers write configuration and logs there as that user:
-
-```bash
-sudo chown -R 29263:29263 siebel-volumes/
-```
-
-Then start all four containers:
-
-```bash
-docker compose up -d cgw ses sai mde
-docker compose ps
-```
-
-The containers start with `/bin/bash` and stay running via an attached tty — none of the Siebel services (gateway, server, AI) start automatically. That happens in the bootstrap step below.
-
-Containers and their network aliases (all on the `siebelnet` network, resolvable by other containers as `<name>.<PKI_DOMAIN>`):
-
-| Service | Container name | Exposed ports |
-|---|---|---|
-| cgw | `${CGW_HOSTNAME}` | none |
-| ses | `${SES_HOSTNAME}` | none |
-| sai | `${SAI_HOSTNAME}` | 443 → 6091 |
-| mde | `${MDE_HOSTNAME}` | 4443 → 6091, 2322 → 2322 |
-
-## Bootstrapping the Siebel enterprise
-
-With the database imported (see above) and the `mde` container running, bootstrap the Siebel enterprise — this configures the gateway, creates the Enterprise/Server/AI profiles, and deploys them. It's the step that turns "Siebel is installed" into "Siebel is running and reachable in a browser."
-
-Make sure these are set in `.env` first: `SIEBEL_PRIMARY_LANG`, `GW_REGISTRY_PORT`, `SIEBEL_ANON_PWD`.
+One script handles the rest: it sets bind-mount ownership, builds the images, starts the database, and runs the bootstrap. Total time from scratch is ~3 hours.
 
 **Linux / macOS:**
 ```bash
-./scripts/bootstrap-mde.sh
+./scripts/start.sh
 ```
 
 **Windows (PowerShell):**
 ```powershell
-.\scripts\bootstrap-mde.ps1
+.\scripts\start.ps1
 ```
 
-This is a re-runnable, idempotent operation — see [docs/bootstrap.md](docs/bootstrap.md) for what it does, timing expectations (~35 min), and troubleshooting.
+What it does, in order:
 
-Once it completes, Siebel is reachable at:
-```
-https://localhost:4443/siebel/app/<application>/<language>
-```
-e.g. `https://localhost:4443/siebel/app/publicsector/enu`
+1. `sudo chown -R 54321:54321 data/dumps/` — lets Oracle write its import log
+2. `sudo chown -R 29263:29263 siebel-volumes/` — lets Siebel containers write configuration and logs
+3. Build `instantclient` and `mde` images (~15–30 min, skipped on re-runs if unchanged)
+4. Start `oracle19c` — first run: DB creation (~20 min) + schema import (~2 hrs); subsequent runs start the provisioned database immediately
+5. Run `bootstrap-mde.sh` — waits for database health, then configures the Siebel enterprise via the Cloud Gateway REST API (~35 min)
 
-Note: port 4443 is MDE's published AI port. Port 443 maps to the SAI container which is built but not bootstrapped in this setup.
+The script is idempotent and safe to re-run.
 
-## Custom web assets (CSS / JS / images)
-
-The MDE container's Tomcat web root is bind-mounted from `siebel-webroot/` in the project directory:
-
-```
-siebel-webroot/     →   /siebel/mde/applicationcontainer_external/siebelwebroot/
-  enu/                  Language-specific templates
-  files/                Downloadable files
-  images/               UI images
-  scripts/              JavaScript
-  htmltemplates/        HTML page templates
-  fonts/                Web fonts
+To watch the database logs during the import (in a separate terminal):
+```bash
+docker compose logs -f oracle19c
 ```
 
-To update: edit files in `siebel-webroot/` on the host — changes are served immediately with no container restart needed. `siebel-webroot/` is gitignored since it contains the full Siebel web root (~330MB). To restore it, extract your `siebelwebroot_Backup.zip` into the project root and flatten the top-level directory:
+See [docs/bootstrap.md](docs/bootstrap.md) for what the bootstrap does step by step and how to troubleshoot.
+
+### 9. Open Siebel
+
+Wait 3–5 minutes after the start script finishes for the object managers to initialise, then open:
+
+```
+https://localhost:4443/siebel/app/publicsector/enu
+```
+
+Login with `SADMIN` / (value of `AI_USER_PWD` in `.env`).
+
+> Port **4443** is MDE's Application Interface. Port 443 is reserved for the standalone SAI container used in the [distributed setup](docs/distributed.md).
+
+---
+
+## .env variable reference
+
+| Variable | Default | Description |
+|---|---|---|
+| `ORACLE_PWD` | — | Oracle SYS / SYSTEM password |
+| `DUMP_FILE` | — | Data Pump export filename (file must be in `data/dumps/`) |
+| `OL_VERSION` | `8` | Oracle Linux major version used as base for images |
+| `ORACLE_IC_VERSION` | `19.31` | Instant Client version (must match the RPM filenames) |
+| `SIEBEL_VERSION` | `24.9` | Siebel version tag applied to built images |
+| `DB_HOST` | `db19sbl249` | Container name / hostname for the Oracle container |
+| `DB_PORT` | `1521` | Oracle listener port, published to the host |
+| `DB_SERVICE` | `ORCLPDB1` | Oracle PDB service name |
+| `PKI_PWD` | — | Password for the SSL keystores baked into Siebel images |
+| `PKI_DOMAIN` | `company.com` | Domain used in TLS certificate SANs |
+| `GW_HTTP_PORT` | `4091` | Gateway Tomcat HTTP port (internal) |
+| `GW_SHUTDOWN_PORT` | `4092` | Gateway Tomcat shutdown port (internal) |
+| `GW_REDIRECT_PORT` | `4090` | Gateway Tomcat HTTPS redirect port (internal) |
+| `SES_HTTP_PORT` | `5090` | Server Tomcat HTTP port (internal) |
+| `SES_SHUTDOWN_PORT` | `5092` | Server Tomcat shutdown port (internal) |
+| `SES_REDIRECT_PORT` | `5091` | Server Tomcat HTTPS redirect port (internal) |
+| `AI_HTTP_PORT` | `6090` | Application Interface HTTP port (internal) |
+| `AI_SHUTDOWN_PORT` | `6092` | Application Interface shutdown port (internal) |
+| `AI_REDIRECT_PORT` | `6091` | Application Interface HTTPS port — published as **4443** on the host |
+| `AI_USERNAME` | `SADMIN` | Siebel administrator Oracle DB username |
+| `AI_USER_PWD` | — | Siebel administrator password |
+| `SIEBEL_ENTERPRISE` | `dev01` | Siebel enterprise name |
+| `MDE_HOSTNAME` | `dev01mde01` | MDE container hostname |
+| `GW_TLS_PORT` | `2320` | Gateway TLS port |
+| `SIEBEL_UID` | `29263` | UID of the `oracle` OS user inside Siebel containers |
+| `SIEBEL_GID` | `29263` | GID of the `oracle` OS group inside Siebel containers |
+| `SIEBEL_PRIMARY_LANG` | `enu` | Primary language code for the enterprise |
+| `GW_REGISTRY_PORT` | `2322` | Zookeeper registry port — published from the MDE container |
+| `SIEBEL_ANON_PWD` | — | Anonymous / guest login password (username is `GUESTCST`) |
+| `CGW_HOSTNAME` | `dev01cgw01` | CGW container hostname — distributed setup only |
+| `SES_HOSTNAME` | `dev01ses01` | SES container hostname — distributed setup only |
+| `SAI_HOSTNAME` | `dev01sai01` | SAI container hostname — distributed setup only |
+
+---
+
+## Verifying the schema import
+
+After the database is ready, connect and run:
+
+```sql
+SELECT app_ver FROM siebel.s_app_ver;
+SELECT COUNT(*) FROM siebel.s_contact;
+```
+
+Expected: `v24.9` and `30981` respectively.
+
+## Verifying the built images
+
+After the build completes, confirm Siebel installed correctly:
 
 ```bash
-unzip siebelwebroot_Backup.zip -d siebel-webroot/
-mv siebel-webroot/siebelwebroot_Backup/* siebel-webroot/
-rmdir siebel-webroot/siebelwebroot_Backup
+docker run --rm ol8/siebel/mde-base:24.9np cat /siebel/mde/Siebel_version.properties
 ```
+
+Expected: `SIEBEL_VERSION=24.9.0.0.0`.
+
+---
+
+## Key operational notes
+
+- **Changing passwords after first start**: `AI_USER_PWD` and `SIEBEL_ANON_PWD` are rendered into the Oracle DB on first start by `01-setup.sh`. If you change them in `.env` afterwards, update the live DB with `ALTER USER sadmin IDENTIFIED BY "...";` (and `guestcst` similarly), or drop the `oracle_data` volume and let the DB re-provision from scratch with `docker compose down -v`.
+- **Failed import**: If the container crashes mid-import, drop the volume and start clean: `docker compose down -v && docker compose up -d oracle19c`.
+- **Import log**: `data/dumps/impdp_siebel.log`. Some grant errors are expected (roles that don't exist in this environment). Verify with the SQL queries above.
+- **Re-bootstrapping**: The bootstrap script force-recreates the MDE container every run, wiping its internal gateway state. Running it again does a full reconfiguration from scratch.
+- **`ENABLE_ARCHIVELOG`** is hardcoded to `true` — required by Siebel.
+
+---
+
+## Distributed (4-container) setup
+
+See [docs/distributed.md](docs/distributed.md) for the architecture using separate CGW, SES, and SAI containers. That setup uses `docker-compose.distributed.yml`.

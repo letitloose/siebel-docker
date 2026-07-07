@@ -23,6 +23,9 @@ $MAX_TIME  = 30
 
 $SIEBEL_TABLEOWNER = "SIEBEL"
 $SIEBEL_ANON_USER  = "GUESTCST"
+# Expected number of '. . imported' lines in the impdp log for Siebel 24.9.
+# Update if you switch to a different dump version.
+$IMPORT_OBJECT_TOTAL = 5665
 
 # Invokes a Cloud Gateway REST API call and returns the response body.
 # Uses curl.exe explicitly to avoid PowerShell's Invoke-WebRequest alias.
@@ -73,9 +76,23 @@ function Wait-ForDeployed {
 Write-Host "==> Recreating the mde container for a guaranteed clean starting state"
 docker compose up -d --force-recreate mde
 
-Write-Host "==> Waiting for the database to report healthy"
-while ((docker inspect --format='{{.State.Health.Status}}' $DB_HOST 2>$null) -ne "healthy") {
-    Start-Sleep -Seconds 5
+Write-Host "==> Waiting for Siebel schema to be ready"
+Write-Host "    On first run this takes ~2 hours (DB creation + schema import). Polling every 5 minutes..."
+while ($true) {
+    $result = docker compose exec -T oracle19c bash -c `
+        "echo 'SELECT count(*) FROM siebel.s_app_ver;' | timeout 30 sqlplus -s sys/${ORACLE_PWD}@//localhost:1521/ORCLPDB1 as sysdba" 2>$null |
+        Select-String '^\s*[1-9][0-9]*\s*$' | Select-Object -First 1
+    $ts = Get-Date -Format "HH:mm:ss"
+    if ($result) { Write-Host "    [$ts] Siebel schema ready."; break }
+    $imported = (docker compose exec -T oracle19c grep -c '. . imported' /opt/oracle/dumps/impdp_siebel.log 2>$null) -as [int]
+    if (-not $imported) { $imported = 0 }
+    $lastObj = docker compose logs oracle19c 2>$null |
+        Select-String "Processing object type" | Select-Object -Last 1 |
+        ForEach-Object { ($_.Line -split "Processing object type ")[-1] }
+    if (-not $lastObj) { $lastObj = "waiting for import to start" }
+    Write-Host "    [$ts] $imported/$IMPORT_OBJECT_TOTAL objects imported — phase: $lastObj"
+    Write-Host "                    Next check in 5 minutes..."
+    Start-Sleep -Seconds 300
 }
 
 Write-Host "==> Starting MDE internal and external Tomcat"

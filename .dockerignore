@@ -1,8 +1,12 @@
 .git
 .env
-dumps/
-init-scripts/
-README.md
 .env.example
 .gitignore
+.gitattributes
 .dockerignore
+README.md
+data/
+siebel-volumes/
+init-scripts/
+docs/
+scripts/

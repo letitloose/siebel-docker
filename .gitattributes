@@ -2,6 +2,7 @@
 # Without this, Windows Git with autocrlf=true will convert them to CRLF
 # and bash inside the container will fail with "bad interpreter" errors.
 *.sh        text eol=lf
+*.ps1       text eol=lf
 *.sql       text eol=lf
 *.template  text eol=lf
 *.rsp       text eol=lf
