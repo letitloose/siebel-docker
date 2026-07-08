@@ -90,7 +90,7 @@ while ($true) {
         Select-String "Processing object type" | Select-Object -Last 1 |
         ForEach-Object { ($_.Line -split "Processing object type ")[-1] }
     if (-not $lastObj) { $lastObj = "waiting for import to start" }
-    Write-Host "    [$ts] $imported/$IMPORT_OBJECT_TOTAL objects imported — phase: $lastObj"
+    Write-Host "    [$ts] $imported/$IMPORT_OBJECT_TOTAL objects imported - phase: $lastObj"
     Write-Host "                    Next check in 5 minutes..."
     Start-Sleep -Seconds 300
 }
