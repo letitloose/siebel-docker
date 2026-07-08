@@ -18,7 +18,7 @@ Get-Content .env | ForEach-Object {
 }
 
 $MDE_URL   = "https://localhost:4443/siebel/v1.0"
-$AUTH      = "${AI_USERNAME}:${AI_USER_PWD}"
+$AUTH      = "${AI_USERNAME}:$AI_USER_PWD"
 $MAX_TIME  = 120
 
 $SIEBEL_TABLEOWNER = "SIEBEL"
@@ -35,7 +35,7 @@ function Invoke-Api {
         [string]$Path,
         [string]$Body = ""
     )
-    $url = "${MDE_URL}${Path}"
+    $url = "${MDE_URL}$Path"
     if ($Body) {
         $response = curl.exe -sk --max-time $MAX_TIME -X $Method $url `
             --user $AUTH `
@@ -57,7 +57,7 @@ function Wait-ForDeployed {
     Write-Host "Waiting for $Path to report Deployed..."
     while ($true) {
         $ts       = Get-Date -Format "HH:mm:ss"
-        $response = curl.exe -sk --max-time $MAX_TIME "${MDE_URL}${Path}" --user $AUTH
+        $response = curl.exe -sk --max-time $MAX_TIME "${MDE_URL}$Path" --user $AUTH
         $body     = $response -join "`n"
         Write-Host "[$ts] attempt=$attempt response=$body"
         if ($body -match '"Status"\s*:\s*"Deployed"') {
