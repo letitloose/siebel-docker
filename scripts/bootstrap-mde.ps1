@@ -37,10 +37,10 @@ function Invoke-Api {
     )
     $url = "${MDE_URL}$Path"
     if ($Body) {
-        $response = curl.exe -sk --max-time $MAX_TIME -X $Method $url `
+        $response = $Body | curl.exe -sk --max-time $MAX_TIME -X $Method $url `
             --user $AUTH `
             -H "Content-Type: application/json" `
-            -d $Body
+            --data-binary @-
     } else {
         $response = curl.exe -sk --max-time $MAX_TIME -X $Method $url `
             --user $AUTH
