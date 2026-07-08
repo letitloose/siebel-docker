@@ -19,7 +19,7 @@ Get-Content .env | ForEach-Object {
 
 $MDE_URL   = "https://localhost:4443/siebel/v1.0"
 $AUTH      = "${AI_USERNAME}:${AI_USER_PWD}"
-$MAX_TIME  = 30
+$MAX_TIME  = 120
 
 $SIEBEL_TABLEOWNER = "SIEBEL"
 $SIEBEL_ANON_USER  = "GUESTCST"

@@ -18,7 +18,7 @@ set +a
 
 MDE_URL="https://localhost:4443/siebel/v1.0"
 AUTH="${AI_USERNAME}:${AI_USER_PWD}"
-CURL_MAX_TIME=30
+CURL_MAX_TIME=120
 
 # These map to database users created by 01-setup.sql.template. Their
 # passwords are configurable (AI_USER_PWD/SIEBEL_ANON_PWD in .env, also
