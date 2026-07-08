@@ -108,7 +108,7 @@ while ($true) {
 
 Write-Host "==> 1. Setting Cloud Gateway host info"
 $body = [ordered]@{
-    CGHostURI = "${MDE_HOSTNAME}.${PKI_DOMAIN}:${SES_REDIRECT_PORT}"
+    CGHostURI = "${MDE_HOSTNAME}.${PKI_DOMAIN}:$SES_REDIRECT_PORT"
     CGTlsPort = $GW_TLS_PORT
 } | ConvertTo-Json
 Invoke-Api POST /cginfo $body
@@ -226,7 +226,7 @@ $body = [ordered]@{
                 ValidateCertificate  = $true
             }
             LogProperties  = [ordered]@{ LogLevel = "ERROR" }
-            ObjectManager  = "eaiobjmgr_${SIEBEL_PRIMARY_LANG}"
+            ObjectManager  = "eaiobjmgr_$SIEBEL_PRIMARY_LANG"
             Baseuri        = "${MDE_HOSTNAME}.${PKI_DOMAIN}:${AI_REDIRECT_PORT}/siebel/v1.0/"
             MaxConnections = 20
             RESTResourceParamList = @()
@@ -237,9 +237,9 @@ $body = [ordered]@{
         RESTOutBound = [ordered]@{ LogProperties = [ordered]@{ LogLevel = "ERROR" } }
         SOAPOutBound = [ordered]@{ LogProperties = [ordered]@{ LogLevel = "ERROR" } }
         Applications = @(
-            [ordered]@{ Name = "eai";          ObjectManager = "eaiobjmgr_${SIEBEL_PRIMARY_LANG}";  Language = $SIEBEL_PRIMARY_LANG; StartCommand = ""; EnableExtServiceOnly = $false; AvailableInSiebelMobile = $false; AuthenticationProperties = $ap },
-            [ordered]@{ Name = "publicsector"; ObjectManager = "psccobjmgr_${SIEBEL_PRIMARY_LANG}"; Language = $SIEBEL_PRIMARY_LANG; StartCommand = ""; EnableExtServiceOnly = $false; AvailableInSiebelMobile = $false; AuthenticationProperties = $ap },
-            [ordered]@{ Name = "callcenter";   ObjectManager = "sccobjmgr_${SIEBEL_PRIMARY_LANG}";  Language = $SIEBEL_PRIMARY_LANG; StartCommand = ""; EnableExtServiceOnly = $false; AvailableInSiebelMobile = $false; AuthenticationProperties = $ap }
+            [ordered]@{ Name = "eai";          ObjectManager = "eaiobjmgr_$SIEBEL_PRIMARY_LANG";  Language = $SIEBEL_PRIMARY_LANG; StartCommand = ""; EnableExtServiceOnly = $false; AvailableInSiebelMobile = $false; AuthenticationProperties = $ap },
+            [ordered]@{ Name = "publicsector"; ObjectManager = "psccobjmgr_$SIEBEL_PRIMARY_LANG"; Language = $SIEBEL_PRIMARY_LANG; StartCommand = ""; EnableExtServiceOnly = $false; AvailableInSiebelMobile = $false; AuthenticationProperties = $ap },
+            [ordered]@{ Name = "callcenter";   ObjectManager = "sccobjmgr_$SIEBEL_PRIMARY_LANG";  Language = $SIEBEL_PRIMARY_LANG; StartCommand = ""; EnableExtServiceOnly = $false; AvailableInSiebelMobile = $false; AuthenticationProperties = $ap }
         )
         RESTInBoundResource = @( [ordered]@{ ResourceType = "Data"; RESTResourceParamList = @() } )
         swe = [ordered]@{
@@ -262,12 +262,12 @@ $body = [ordered]@{
     }
 } | ConvertTo-Json -Depth 5
 Invoke-Api POST /cloudgateway/deployments/enterprises/ $body
-Wait-ForDeployed "/cloudgateway/deployments/enterprises/${SIEBEL_ENTERPRISE}"
+Wait-ForDeployed "/cloudgateway/deployments/enterprises/$SIEBEL_ENTERPRISE"
 
 Write-Host "==> 8. Deploying the Server"
 $body = [ordered]@{
     DeploymentInfo = [ordered]@{
-        PhysicalHostIP = "${MDE_HOSTNAME}.${PKI_DOMAIN}:${SES_REDIRECT_PORT}"
+        PhysicalHostIP = "${MDE_HOSTNAME}.${PKI_DOMAIN}:$SES_REDIRECT_PORT"
         ProfileName    = "server_profile"
         Action         = "Deploy"
     }
@@ -283,7 +283,7 @@ Wait-ForDeployed "/cloudgateway/deployments/servers/siebses1"
 Write-Host "==> 9. Deploying the Application Interface"
 $body = [ordered]@{
     DeploymentInfo = [ordered]@{
-        PhysicalHostIP = "${MDE_HOSTNAME}.${PKI_DOMAIN}:${AI_REDIRECT_PORT}"
+        PhysicalHostIP = "${MDE_HOSTNAME}.${PKI_DOMAIN}:$AI_REDIRECT_PORT"
         ProfileName    = "ai_profile"
         Action         = "Deploy"
     }
@@ -294,4 +294,5 @@ $body = [ordered]@{
 } | ConvertTo-Json -Depth 5
 Invoke-Api POST /cloudgateway/deployments/swsm/ $body
 
-Write-Host "==> Bootstrap complete. Siebel should be reachable at https://localhost:4443/siebel/app/${SIEBEL_PRIMARY_LANG}"
+Write-Host "==> Bootstrap complete. Siebel should be reachable at https://localhost:4443/siebel/app/$SIEBEL_PRIMARY_LANG"
+
