@@ -37,10 +37,12 @@ function Invoke-Api {
     )
     $url = "${MDE_URL}$Path"
     if ($Body) {
-        $response = $Body | curl.exe -sk --max-time $MAX_TIME -X $Method $url `
+        $tmp = "$env:TEMP\siebel_body.json"
+        [System.IO.File]::WriteAllText($tmp, $Body, [System.Text.Encoding]::UTF8)
+        $response = curl.exe -sk --max-time $MAX_TIME -X $Method $url `
             --user $AUTH `
             -H "Content-Type: application/json" `
-            --data-binary '@-'
+            --data-binary "@$tmp"
     } else {
         $response = curl.exe -sk --max-time $MAX_TIME -X $Method $url `
             --user $AUTH
