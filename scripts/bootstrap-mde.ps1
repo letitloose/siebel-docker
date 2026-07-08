@@ -110,7 +110,7 @@ Write-Host "==> 1. Setting Cloud Gateway host info"
 $body = [ordered]@{
     CGHostURI = "${MDE_HOSTNAME}.${PKI_DOMAIN}:$SES_REDIRECT_PORT"
     CGTlsPort = $GW_TLS_PORT
-} | ConvertTo-Json
+} | ConvertTo-Json -Compress
 Invoke-Api POST /cginfo $body
 
 Write-Host "==> 2. Configuring the Gateway security profile (DB-backed authentication)"
@@ -139,7 +139,7 @@ $body = [ordered]@{
         DBSecurityAdapterDataSource      = $DB_SERVICE
         DBSecurityAdapterPropagateChange = $false
     }
-} | ConvertTo-Json -Depth 10
+} | ConvertTo-Json -Compress -Depth 10
 Invoke-Api POST /cloudgateway/GatewaySecurityProfile $body
 
 Write-Host "==> 3. Bootstrapping the Cloud Gateway registry"
@@ -148,7 +148,7 @@ $body = [ordered]@{
     registryUserName = $AI_USERNAME
     registryPassword = $AI_USER_PWD
     PrimaryLanguage  = $SIEBEL_PRIMARY_LANG
-} | ConvertTo-Json
+} | ConvertTo-Json -Compress
 Invoke-Api POST /cloudgateway/bootstrapCG $body
 
 Write-Host "==> 4. Creating the Enterprise profile"
@@ -172,7 +172,7 @@ $body = [ordered]@{
         PeerAuth            = $true
         PeerCertValidation  = $true
     }
-} | ConvertTo-Json -Depth 5
+} | ConvertTo-Json -Compress -Depth 5
 Invoke-Api POST /cloudgateway/profiles/enterprises/ $body
 
 Write-Host "==> 5. Creating the Server profile"
@@ -194,7 +194,7 @@ $body = [ordered]@{
         ClusteringEnvironmentSetup  = "NotClustered"
         UseOracleConnector          = "true"
     }
-} | ConvertTo-Json -Depth 5
+} | ConvertTo-Json -Compress -Depth 5
 Invoke-Api POST /cloudgateway/profiles/servers/ $body
 
 Write-Host "==> 6. Creating the Application Interface profile"
@@ -250,7 +250,7 @@ $body = [ordered]@{
             AllowStats         = $true
         }
     }
-} | ConvertTo-Json -Depth 20
+} | ConvertTo-Json -Compress -Depth 20
 Invoke-Api POST /cloudgateway/profiles/swsm/ $body
 
 Write-Host "==> 7. Deploying the Enterprise"
@@ -260,7 +260,7 @@ $body = [ordered]@{
         SiebelEnterprise = $SIEBEL_ENTERPRISE
         EnterpriseDesc   = "${SIEBEL_ENTERPRISE} Enterprise"
     }
-} | ConvertTo-Json -Depth 5
+} | ConvertTo-Json -Compress -Depth 5
 Invoke-Api POST /cloudgateway/deployments/enterprises/ $body
 Wait-ForDeployed "/cloudgateway/deployments/enterprises/$SIEBEL_ENTERPRISE"
 
@@ -276,7 +276,7 @@ $body = [ordered]@{
         SiebelServerDesc = "siebses1 Siebel Application Server"
         DeployedLanguage = $SIEBEL_PRIMARY_LANG
     }
-} | ConvertTo-Json -Depth 5
+} | ConvertTo-Json -Compress -Depth 5
 Invoke-Api POST /cloudgateway/deployments/servers/ $body
 Wait-ForDeployed "/cloudgateway/deployments/servers/siebses1"
 
@@ -291,7 +291,7 @@ $body = [ordered]@{
         Node     = "siebsai1"
         NodeDesc = "siebsai1 Siebel Application Interface Node"
     }
-} | ConvertTo-Json -Depth 5
+} | ConvertTo-Json -Compress -Depth 5
 Invoke-Api POST /cloudgateway/deployments/swsm/ $body
 
 Write-Host "==> Bootstrap complete. Siebel should be reachable at https://localhost:4443/siebel/app/$SIEBEL_PRIMARY_LANG"
