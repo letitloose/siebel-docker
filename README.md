@@ -9,8 +9,16 @@ For a distributed 4-container setup (separate CGW, SES, SAI), see [docs/distribu
 ## Prerequisites
 
 - Docker Desktop (Mac / Windows) or Docker Engine + Compose plugin v2 (Linux)
-- Windows: Docker Desktop with WSL2 backend enabled, PowerShell 5.1+
 - A free account on [container-registry.oracle.com](https://container-registry.oracle.com) to pull the Oracle 19c image
+
+**Windows requirements:**
+- Docker Desktop with WSL2 backend enabled
+- PowerShell 5.1+ (built into Windows 10/11)
+- **Docker Desktop memory: set to 8 GB minimum** (Settings → Resources → Memory). The default (2–4 GB) is not enough — Oracle alone needs ~4 GB and the Siebel Server needs another 4 GB.
+- **PowerShell execution policy:** run once to allow local scripts:
+  ```powershell
+  Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+  ```
 
 ---
 
@@ -59,10 +67,18 @@ Set `DUMP_FILE` in `.env` (next step) to match the filename. Ownership on `data/
 
 Extract your `siebelwebroot_Backup.zip` into `data/webroot/`:
 
+**Linux / macOS:**
 ```bash
 unzip siebelwebroot_Backup.zip -d data/webroot/
 mv data/webroot/siebelwebroot_Backup/* data/webroot/
 rmdir data/webroot/siebelwebroot_Backup
+```
+
+**Windows (PowerShell):**
+```powershell
+Expand-Archive siebelwebroot_Backup.zip -DestinationPath data\webroot\
+Move-Item data\webroot\siebelwebroot_Backup\* data\webroot\
+Remove-Item data\webroot\siebelwebroot_Backup
 ```
 
 The `data/webroot/` directory is bind-mounted into the MDE container. Changes on the host are served immediately with no container restart needed.
