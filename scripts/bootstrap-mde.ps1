@@ -40,7 +40,7 @@ function Invoke-Api {
         $response = $Body | curl.exe -sk --max-time $MAX_TIME -X $Method $url `
             --user $AUTH `
             -H "Content-Type: application/json" `
-            --data-binary @-
+            --data-binary '@-'
     } else {
         $response = curl.exe -sk --max-time $MAX_TIME -X $Method $url `
             --user $AUTH
