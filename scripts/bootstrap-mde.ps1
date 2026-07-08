@@ -107,191 +107,191 @@ while ($true) {
 }
 
 Write-Host "==> 1. Setting Cloud Gateway host info"
-Invoke-Api POST /cginfo @"
-{
-  "CGHostURI": "${MDE_HOSTNAME}.${PKI_DOMAIN}:${SES_REDIRECT_PORT}",
-  "CGTlsPort": "${GW_TLS_PORT}"
-}
-"@
+$body = [ordered]@{
+    CGHostURI = "${MDE_HOSTNAME}.${PKI_DOMAIN}:${SES_REDIRECT_PORT}"
+    CGTlsPort = $GW_TLS_PORT
+} | ConvertTo-Json
+Invoke-Api POST /cginfo $body
 
 Write-Host "==> 2. Configuring the Gateway security profile (DB-backed authentication)"
-Invoke-Api POST /cloudgateway/GatewaySecurityProfile @"
-{
-  "Profile": {"ProfileName": "Siebel"},
-  "SecurityConfigParams": {
-    "DataSources": [{
-      "Name": "${DB_SERVICE}",
-      "Type": "DB",
-      "Host": "${DB_HOST}",
-      "Port": "${DB_PORT}",
-      "SqlStyle": "Oracle",
-      "Endpoint": "${DB_SERVICE}",
-      "TableOwner": "${SIEBEL_TABLEOWNER}",
-      "HashUserPwd": false,
-      "HashAlgorithm": "SHA1",
-      "CRC": ""
-    }],
-    "SecAdptName": "DBSecAdpt",
-    "SecAdptMode": "DB",
-    "NSAdminRole": ["Siebel Administrator"],
-    "TestUserName": "${AI_USERNAME}",
-    "TestUserPwd": "${AI_USER_PWD}",
-    "DBSecurityAdapterDataSource": "${DB_SERVICE}",
-    "DBSecurityAdapterPropagateChange": false
-  }
-}
-"@
+$body = [ordered]@{
+    Profile = [ordered]@{ ProfileName = "Siebel" }
+    SecurityConfigParams = [ordered]@{
+        DataSources = @(
+            [ordered]@{
+                Name          = $DB_SERVICE
+                Type          = "DB"
+                Host          = $DB_HOST
+                Port          = $DB_PORT
+                SqlStyle      = "Oracle"
+                Endpoint      = $DB_SERVICE
+                TableOwner    = $SIEBEL_TABLEOWNER
+                HashUserPwd   = $false
+                HashAlgorithm = "SHA1"
+                CRC           = ""
+            }
+        )
+        SecAdptName                      = "DBSecAdpt"
+        SecAdptMode                      = "DB"
+        NSAdminRole                      = @("Siebel Administrator")
+        TestUserName                     = $AI_USERNAME
+        TestUserPwd                      = $AI_USER_PWD
+        DBSecurityAdapterDataSource      = $DB_SERVICE
+        DBSecurityAdapterPropagateChange = $false
+    }
+} | ConvertTo-Json -Depth 10
+Invoke-Api POST /cloudgateway/GatewaySecurityProfile $body
 
 Write-Host "==> 3. Bootstrapping the Cloud Gateway registry"
-Invoke-Api POST /cloudgateway/bootstrapCG @"
-{
-  "registryPort": "${GW_REGISTRY_PORT}",
-  "registryUserName": "${AI_USERNAME}",
-  "registryPassword": "${AI_USER_PWD}",
-  "PrimaryLanguage": "${SIEBEL_PRIMARY_LANG}"
-}
-"@
+$body = [ordered]@{
+    registryPort     = $GW_REGISTRY_PORT
+    registryUserName = $AI_USERNAME
+    registryPassword = $AI_USER_PWD
+    PrimaryLanguage  = $SIEBEL_PRIMARY_LANG
+} | ConvertTo-Json
+Invoke-Api POST /cloudgateway/bootstrapCG $body
 
 Write-Host "==> 4. Creating the Enterprise profile"
-Invoke-Api POST /cloudgateway/profiles/enterprises/ @"
-{
-  "Profile": {"ProfileName": "enterprise_profile"},
-  "EnterpriseConfigParams": {
-    "ServerFileSystem": "/sfs",
-    "UserName": "${AI_USERNAME}",
-    "Password": "${AI_USER_PWD}",
-    "DatabasePlatform": "Oracle",
-    "DBConnectString": "${DB_SERVICE}",
-    "DBUsername": "${AI_USERNAME}",
-    "DBUserPasswd": "${AI_USER_PWD}",
-    "TableOwner": "${SIEBEL_TABLEOWNER}",
-    "SecAdptProfileName": "Gateway",
-    "PrimaryLanguage": "${SIEBEL_PRIMARY_LANG}",
-    "Encrypt": "SISNAPITLS",
-    "CACertFileName": "/siebel/pki/truststore.jks",
-    "KeyFileName": "/siebel/pki/keystore.jks",
-    "KeyFilePassword": "${PKI_PWD}",
-    "PeerAuth": true,
-    "PeerCertValidation": true
-  }
-}
-"@
+$body = [ordered]@{
+    Profile = [ordered]@{ ProfileName = "enterprise_profile" }
+    EnterpriseConfigParams = [ordered]@{
+        ServerFileSystem    = "/sfs"
+        UserName            = $AI_USERNAME
+        Password            = $AI_USER_PWD
+        DatabasePlatform    = "Oracle"
+        DBConnectString     = $DB_SERVICE
+        DBUsername          = $AI_USERNAME
+        DBUserPasswd        = $AI_USER_PWD
+        TableOwner          = $SIEBEL_TABLEOWNER
+        SecAdptProfileName  = "Gateway"
+        PrimaryLanguage     = $SIEBEL_PRIMARY_LANG
+        Encrypt             = "SISNAPITLS"
+        CACertFileName      = "/siebel/pki/truststore.jks"
+        KeyFileName         = "/siebel/pki/keystore.jks"
+        KeyFilePassword     = $PKI_PWD
+        PeerAuth            = $true
+        PeerCertValidation  = $true
+    }
+} | ConvertTo-Json -Depth 5
+Invoke-Api POST /cloudgateway/profiles/enterprises/ $body
 
 Write-Host "==> 5. Creating the Server profile"
-Invoke-Api POST /cloudgateway/profiles/servers/ @"
-{
-  "Profile": {"ProfileName": "server_profile"},
-  "ServerConfigParams": {
-    "Username": "${AI_USERNAME}",
-    "Password": "${AI_USER_PWD}",
-    "AnonLoginUserName": "${SIEBEL_ANON_USER}",
-    "AnonLoginPassword": "${SIEBEL_ANON_PWD}",
-    "EnableCompGroupsSIA": "ADM, CommMgmt, DataQual, EAI, CallCenter, PublicSector, SiebelWebTools, eChannel, Workflow, XMLPReport",
-    "SCBPort": "2321",
-    "LocalSynchMgrPort": "40400",
-    "ModifyServerEncrypt": true,
-    "ModifyServerAuth": true,
-    "Encrypt": "SISNAPITLS",
-    "CertFileNameServer": "/siebel/pki/keystore.jks",
-    "CACertFileName": "/siebel/pki/truststore.jks",
-    "ClusteringEnvironmentSetup": "NotClustered",
-    "UseOracleConnector": "true"
-  }
-}
-"@
+$body = [ordered]@{
+    Profile = [ordered]@{ ProfileName = "server_profile" }
+    ServerConfigParams = [ordered]@{
+        Username                    = $AI_USERNAME
+        Password                    = $AI_USER_PWD
+        AnonLoginUserName           = $SIEBEL_ANON_USER
+        AnonLoginPassword           = $SIEBEL_ANON_PWD
+        EnableCompGroupsSIA         = "ADM, CommMgmt, DataQual, EAI, CallCenter, PublicSector, SiebelWebTools, eChannel, Workflow, XMLPReport"
+        SCBPort                     = "2321"
+        LocalSynchMgrPort           = "40400"
+        ModifyServerEncrypt         = $true
+        ModifyServerAuth            = $true
+        Encrypt                     = "SISNAPITLS"
+        CertFileNameServer          = "/siebel/pki/keystore.jks"
+        CACertFileName              = "/siebel/pki/truststore.jks"
+        ClusteringEnvironmentSetup  = "NotClustered"
+        UseOracleConnector          = "true"
+    }
+} | ConvertTo-Json -Depth 5
+Invoke-Api POST /cloudgateway/profiles/servers/ $body
 
 Write-Host "==> 6. Creating the Application Interface profile"
-Invoke-Api POST /cloudgateway/profiles/swsm/ @"
-{
-  "Profile": {"ProfileName": "ai_profile"},
-  "ConfigParam": {
-    "defaults": {
-      "DoCompression": true,
-      "EnableFQDN": false,
-      "AuthenticationProperties": {
-        "SessionTimeout": 900,
-        "GuestSessionTimeout": 300,
-        "SessionTimeoutWLMethod": "HeartBeat",
-        "SessionTimeoutWLCommand": "UpdatePrefMsg",
-        "SessionTokenMaxAge": 2880,
-        "SessionTokenTimeout": 900,
-        "SingleSignOn": false,
-        "AnonUserName": "${SIEBEL_ANON_USER}",
-        "AnonPassword": "${SIEBEL_ANON_PWD}"
-      }
-    },
-    "RESTInBound": {
-      "RESTAuthenticationProperties": {
-        "AnonUserName": "${SIEBEL_ANON_USER}",
-        "AnonPassword": "${SIEBEL_ANON_PWD}",
-        "AuthenticationType": "Basic",
-        "SessKeepAlive": 10,
-        "ValidateCertificate": true
-      },
-      "LogProperties": {"LogLevel": "ERROR"},
-      "ObjectManager": "eaiobjmgr_${SIEBEL_PRIMARY_LANG}",
-      "Baseuri": "${MDE_HOSTNAME}.${PKI_DOMAIN}:${AI_REDIRECT_PORT}/siebel/v1.0/",
-      "MaxConnections": 20,
-      "RESTResourceParamList": []
-    },
-    "UI":          {"LogProperties": {"LogLevel": "ERROR"}},
-    "EAI":         {"LogProperties": {"LogLevel": "ERROR"}},
-    "DAV":         {"LogProperties": {"LogLevel": "ERROR"}},
-    "RESTOutBound":{"LogProperties": {"LogLevel": "ERROR"}},
-    "SOAPOutBound":{"LogProperties": {"LogLevel": "ERROR"}},
-    "Applications": [
-      {"Name": "eai",          "ObjectManager": "eaiobjmgr_${SIEBEL_PRIMARY_LANG}", "Language": "${SIEBEL_PRIMARY_LANG}", "StartCommand": "", "EnableExtServiceOnly": false, "AvailableInSiebelMobile": false, "AuthenticationProperties": {"SessionTimeout": 900, "GuestSessionTimeout": 300, "SessionTimeoutWLMethod": "HeartBeat", "SessionTimeoutWLCommand": "UpdatePrefMsg", "SessionTokenMaxAge": 2880, "SessionTokenTimeout": 900, "SingleSignOn": false, "AnonUserName": "${SIEBEL_ANON_USER}", "AnonPassword": "${SIEBEL_ANON_PWD}"}},
-      {"Name": "publicsector", "ObjectManager": "psccobjmgr_${SIEBEL_PRIMARY_LANG}", "Language": "${SIEBEL_PRIMARY_LANG}", "StartCommand": "", "EnableExtServiceOnly": false, "AvailableInSiebelMobile": false, "AuthenticationProperties": {"SessionTimeout": 900, "GuestSessionTimeout": 300, "SessionTimeoutWLMethod": "HeartBeat", "SessionTimeoutWLCommand": "UpdatePrefMsg", "SessionTokenMaxAge": 2880, "SessionTokenTimeout": 900, "SingleSignOn": false, "AnonUserName": "${SIEBEL_ANON_USER}", "AnonPassword": "${SIEBEL_ANON_PWD}"}},
-      {"Name": "callcenter",   "ObjectManager": "sccobjmgr_${SIEBEL_PRIMARY_LANG}",  "Language": "${SIEBEL_PRIMARY_LANG}", "StartCommand": "", "EnableExtServiceOnly": false, "AvailableInSiebelMobile": false, "AuthenticationProperties": {"SessionTimeout": 900, "GuestSessionTimeout": 300, "SessionTimeoutWLMethod": "HeartBeat", "SessionTimeoutWLCommand": "UpdatePrefMsg", "SessionTokenMaxAge": 2880, "SessionTokenTimeout": 900, "SingleSignOn": false, "AnonUserName": "${SIEBEL_ANON_USER}", "AnonPassword": "${SIEBEL_ANON_PWD}"}}
-    ],
-    "RESTInBoundResource": [{"ResourceType": "Data", "RESTResourceParamList": []}],
-    "swe": {"Language": "ENU", "MaxQueryStringLength": -1, "SeedFile": "", "SessionMonitor": false, "AllowStats": true}
-  }
+$ap = [ordered]@{
+    SessionTimeout          = 900
+    GuestSessionTimeout     = 300
+    SessionTimeoutWLMethod  = "HeartBeat"
+    SessionTimeoutWLCommand = "UpdatePrefMsg"
+    SessionTokenMaxAge      = 2880
+    SessionTokenTimeout     = 900
+    SingleSignOn            = $false
+    AnonUserName            = $SIEBEL_ANON_USER
+    AnonPassword            = $SIEBEL_ANON_PWD
 }
-"@
+$body = [ordered]@{
+    Profile = [ordered]@{ ProfileName = "ai_profile" }
+    ConfigParam = [ordered]@{
+        defaults = [ordered]@{
+            DoCompression           = $true
+            EnableFQDN              = $false
+            AuthenticationProperties = $ap
+        }
+        RESTInBound = [ordered]@{
+            RESTAuthenticationProperties = [ordered]@{
+                AnonUserName         = $SIEBEL_ANON_USER
+                AnonPassword         = $SIEBEL_ANON_PWD
+                AuthenticationType   = "Basic"
+                SessKeepAlive        = 10
+                ValidateCertificate  = $true
+            }
+            LogProperties  = [ordered]@{ LogLevel = "ERROR" }
+            ObjectManager  = "eaiobjmgr_${SIEBEL_PRIMARY_LANG}"
+            Baseuri        = "${MDE_HOSTNAME}.${PKI_DOMAIN}:${AI_REDIRECT_PORT}/siebel/v1.0/"
+            MaxConnections = 20
+            RESTResourceParamList = @()
+        }
+        UI           = [ordered]@{ LogProperties = [ordered]@{ LogLevel = "ERROR" } }
+        EAI          = [ordered]@{ LogProperties = [ordered]@{ LogLevel = "ERROR" } }
+        DAV          = [ordered]@{ LogProperties = [ordered]@{ LogLevel = "ERROR" } }
+        RESTOutBound = [ordered]@{ LogProperties = [ordered]@{ LogLevel = "ERROR" } }
+        SOAPOutBound = [ordered]@{ LogProperties = [ordered]@{ LogLevel = "ERROR" } }
+        Applications = @(
+            [ordered]@{ Name = "eai";          ObjectManager = "eaiobjmgr_${SIEBEL_PRIMARY_LANG}";  Language = $SIEBEL_PRIMARY_LANG; StartCommand = ""; EnableExtServiceOnly = $false; AvailableInSiebelMobile = $false; AuthenticationProperties = $ap },
+            [ordered]@{ Name = "publicsector"; ObjectManager = "psccobjmgr_${SIEBEL_PRIMARY_LANG}"; Language = $SIEBEL_PRIMARY_LANG; StartCommand = ""; EnableExtServiceOnly = $false; AvailableInSiebelMobile = $false; AuthenticationProperties = $ap },
+            [ordered]@{ Name = "callcenter";   ObjectManager = "sccobjmgr_${SIEBEL_PRIMARY_LANG}";  Language = $SIEBEL_PRIMARY_LANG; StartCommand = ""; EnableExtServiceOnly = $false; AvailableInSiebelMobile = $false; AuthenticationProperties = $ap }
+        )
+        RESTInBoundResource = @( [ordered]@{ ResourceType = "Data"; RESTResourceParamList = @() } )
+        swe = [ordered]@{
+            Language           = "ENU"
+            MaxQueryStringLength = -1
+            SeedFile           = ""
+            SessionMonitor     = $false
+            AllowStats         = $true
+        }
+    }
+} | ConvertTo-Json -Depth 20
+Invoke-Api POST /cloudgateway/profiles/swsm/ $body
 
 Write-Host "==> 7. Deploying the Enterprise"
-Invoke-Api POST /cloudgateway/deployments/enterprises/ @"
-{
-  "DeploymentInfo": {"ProfileName": "enterprise_profile", "Action": "Deploy"},
-  "EnterpriseDeployParams": {
-    "SiebelEnterprise": "${SIEBEL_ENTERPRISE}",
-    "EnterpriseDesc": "${SIEBEL_ENTERPRISE} Enterprise"
-  }
-}
-"@
+$body = [ordered]@{
+    DeploymentInfo = [ordered]@{ ProfileName = "enterprise_profile"; Action = "Deploy" }
+    EnterpriseDeployParams = [ordered]@{
+        SiebelEnterprise = $SIEBEL_ENTERPRISE
+        EnterpriseDesc   = "${SIEBEL_ENTERPRISE} Enterprise"
+    }
+} | ConvertTo-Json -Depth 5
+Invoke-Api POST /cloudgateway/deployments/enterprises/ $body
 Wait-ForDeployed "/cloudgateway/deployments/enterprises/${SIEBEL_ENTERPRISE}"
 
 Write-Host "==> 8. Deploying the Server"
-Invoke-Api POST /cloudgateway/deployments/servers/ @"
-{
-  "DeploymentInfo": {
-    "PhysicalHostIP": "${MDE_HOSTNAME}.${PKI_DOMAIN}:${SES_REDIRECT_PORT}",
-    "ProfileName": "server_profile",
-    "Action": "Deploy"
-  },
-  "ServerDeployParams": {
-    "SiebelServer": "siebses1",
-    "SiebelServerDesc": "siebses1 Siebel Application Server",
-    "DeployedLanguage": "${SIEBEL_PRIMARY_LANG}"
-  }
-}
-"@
+$body = [ordered]@{
+    DeploymentInfo = [ordered]@{
+        PhysicalHostIP = "${MDE_HOSTNAME}.${PKI_DOMAIN}:${SES_REDIRECT_PORT}"
+        ProfileName    = "server_profile"
+        Action         = "Deploy"
+    }
+    ServerDeployParams = [ordered]@{
+        SiebelServer     = "siebses1"
+        SiebelServerDesc = "siebses1 Siebel Application Server"
+        DeployedLanguage = $SIEBEL_PRIMARY_LANG
+    }
+} | ConvertTo-Json -Depth 5
+Invoke-Api POST /cloudgateway/deployments/servers/ $body
 Wait-ForDeployed "/cloudgateway/deployments/servers/siebses1"
 
 Write-Host "==> 9. Deploying the Application Interface"
-Invoke-Api POST /cloudgateway/deployments/swsm/ @"
-{
-  "DeploymentInfo": {
-    "PhysicalHostIP": "${MDE_HOSTNAME}.${PKI_DOMAIN}:${AI_REDIRECT_PORT}",
-    "ProfileName": "ai_profile",
-    "Action": "Deploy"
-  },
-  "DeploymentParam": {
-    "Node": "siebsai1",
-    "NodeDesc": "siebsai1 Siebel Application Interface Node"
-  }
-}
-"@
+$body = [ordered]@{
+    DeploymentInfo = [ordered]@{
+        PhysicalHostIP = "${MDE_HOSTNAME}.${PKI_DOMAIN}:${AI_REDIRECT_PORT}"
+        ProfileName    = "ai_profile"
+        Action         = "Deploy"
+    }
+    DeploymentParam = [ordered]@{
+        Node     = "siebsai1"
+        NodeDesc = "siebsai1 Siebel Application Interface Node"
+    }
+} | ConvertTo-Json -Depth 5
+Invoke-Api POST /cloudgateway/deployments/swsm/ $body
 
 Write-Host "==> Bootstrap complete. Siebel should be reachable at https://localhost:4443/siebel/app/${SIEBEL_PRIMARY_LANG}"
