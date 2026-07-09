@@ -342,4 +342,6 @@ api POST /cloudgateway/deployments/swsm/ "{
   }
 }"
 
-echo "==> Bootstrap complete. Siebel should be reachable at https://localhost/siebel/app/${SIEBEL_PRIMARY_LANG}"
+echo "==> Bootstrap complete. Wait 3-5 minutes for object managers to initialise, then open:"
+echo "    https://localhost:4443/siebel/app/publicsector/${SIEBEL_PRIMARY_LANG}"
+echo "    Login: ${AI_USERNAME} / (value of AI_USER_PWD in .env)"

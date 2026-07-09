@@ -13,12 +13,10 @@ For a distributed 4-container setup (separate CGW, SES, SAI), see [docs/distribu
 
 **Windows requirements:**
 - Docker Desktop with WSL2 backend enabled
-- PowerShell 5.1+ (built into Windows 10/11)
+- Git for Windows (includes Git Bash) — [git-scm.com](https://git-scm.com/download/win)
 - **Docker Desktop memory: set to 8 GB minimum** (Settings → Resources → Memory). The default (2–4 GB) is not enough — Oracle alone needs ~4 GB and the Siebel Server needs another 4 GB.
-- **PowerShell execution policy:** run once to allow local scripts:
-  ```powershell
-  Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-  ```
+
+All shell scripts run in **Git Bash** on Windows. Open Git Bash from the Start menu (or right-click the project folder → "Git Bash Here") and use the same commands as Linux/macOS.
 
 ---
 
@@ -109,15 +107,11 @@ Everything else can stay at its default for a first run. See the [full variable 
 
 One script handles the rest: it sets bind-mount ownership, builds the images, starts the database, and runs the bootstrap. Total time from scratch is ~3 hours.
 
-**Linux / macOS:**
 ```bash
 ./scripts/start.sh
 ```
 
-**Windows (PowerShell):**
-```powershell
-.\scripts\start.ps1
-```
+On Windows, run this in **Git Bash**.
 
 What it does, in order:
 
@@ -209,6 +203,26 @@ docker run --rm ol8/siebel/mde-base:24.9np cat /siebel/mde/Siebel_version.proper
 ```
 
 Expected: `SIEBEL_VERSION=24.9.0.0.0`.
+
+---
+
+## Stopping and restarting
+
+To stop all containers (data is preserved):
+
+```bash
+docker compose stop
+```
+
+To start them again without rebuilding or re-bootstrapping:
+
+```bash
+./scripts/restart.sh
+```
+
+This starts the containers, waits for Oracle, starts the Siebel Tomcats, and tells you when the UI is ready.
+
+> **Never** run `docker compose down -v` — the `-v` flag destroys the Oracle data volume and requires a full 2-hour schema re-import.
 
 ---
 
