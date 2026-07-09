@@ -130,7 +130,7 @@ api POST /cloudgateway/GatewaySecurityProfile "{
       \"SqlStyle\": \"Oracle\",
       \"Endpoint\": \"${DB_SERVICE}\",
       \"TableOwner\": \"${SIEBEL_TABLEOWNER}\",
-      \"HashUserPwd\": false,
+      \"HashUserPwd\": true,
       \"HashAlgorithm\": \"SHA1\",
       \"CRC\": \"\"
     }],
