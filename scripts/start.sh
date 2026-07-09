@@ -1,4 +1,5 @@
 #!/bin/bash
+export MSYS_NO_PATHCONV=1
 # Full setup: chown bind mounts, build images, start the database, and bootstrap Siebel.
 # Safe to re-run — all steps are idempotent.
 #
