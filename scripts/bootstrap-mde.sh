@@ -1,4 +1,7 @@
 #!/bin/bash
+# Git Bash (MSYS2) auto-converts Unix paths to Windows paths before passing
+# them to external commands. This breaks docker --workdir /config and similar.
+export MSYS_NO_PATHCONV=1
 # Bootstraps the Siebel Enterprise inside the MDE container by replicating
 # the REST API calls the original Ansible playbook (0004) made against the
 # Siebel Cloud Gateway management API. See docs/bootstrap.md for the full
