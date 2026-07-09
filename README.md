@@ -228,7 +228,7 @@ This starts the containers, waits for Oracle, starts the Siebel Tomcats, and tel
 
 ## Key operational notes
 
-- **Changing passwords after first start**: `AI_USER_PWD` and `SIEBEL_ANON_PWD` are rendered into the Oracle DB on first start by `01-setup.sh`. If you change them in `.env` afterwards, update the live DB with `ALTER USER sadmin IDENTIFIED BY "...";` (and `guestcst` similarly), or drop the `oracle_data` volume and let the DB re-provision from scratch with `docker compose down -v`.
+- **Changing passwords after first start**: `AI_USER_PWD` and `SIEBEL_ANON_PWD` are rendered into the Oracle DB on first start by `01-setup.sh`. If you change them in `.env` afterwards, update the live DB with `ALTER USER SADMIN IDENTIFIED BY "...";` (and `GUESTCST` similarly), or drop the `oracle_data` volume and let the DB re-provision from scratch with `docker compose down -v`.
 - **Failed import**: If the container crashes mid-import, drop the volume and start clean: `docker compose down -v && docker compose up -d oracle19c`.
 - **Import log**: `data/dumps/impdp_siebel.log`. Some grant errors are expected (roles that don't exist in this environment). Verify with the SQL queries above.
 - **Re-bootstrapping**: The bootstrap script force-recreates the MDE container every run, wiping its internal gateway state. Running it again does a full reconfiguration from scratch.
