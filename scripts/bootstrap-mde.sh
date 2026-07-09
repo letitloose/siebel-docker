@@ -108,7 +108,7 @@ docker compose exec -T --workdir /config mde bash ./start_ai_internal.sh
 docker compose exec -T --workdir /config mde bash ./start_ai_external.sh
 
 echo "==> Waiting for the Cloud Gateway REST API to respond"
-until curl -sk --max-time "$CURL_MAX_TIME" -o /dev/null "${MDE_URL}/cginfo"; do
+until curl -sk --max-time "$CURL_MAX_TIME" "${MDE_URL}/cginfo" > /dev/null; do
     sleep 5
 done
 
