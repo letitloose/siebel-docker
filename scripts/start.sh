@@ -12,11 +12,6 @@ cd "$(dirname "$0")/.."
 
 set -a; source .env; set +a
 
-if [ -n "${SOFTWARE_DIR:-}" ]; then
-    echo "==> Symlinking software/ -> ${SOFTWARE_DIR}"
-    ln -sfn "$SOFTWARE_DIR" software
-fi
-
 echo "==> Setting ownership on ${DATA_DIR:-./data}/dumps/ (Oracle process runs as uid 54321)"
 sudo chown -R 54321:54321 "${DATA_DIR:-./data}/dumps/"
 

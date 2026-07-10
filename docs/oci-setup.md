@@ -194,7 +194,20 @@ docker run hello-world
 
 ---
 
-## Step 8 — Clone the repo and configure
+## Step 8 — Log in to Oracle Container Registry
+
+The Oracle 19c database image requires authentication. Log in before pulling:
+
+```bash
+docker login container-registry.oracle.com
+```
+
+You'll need a free Oracle account at container-registry.oracle.com, and you must have accepted the Oracle Database licence (Database → enterprise → Accept Agreement) — the same one-time step as the local setup.
+
+---
+
+## Step 9 — Clone the repo and configure
+
 
 ```bash
 git clone <repo-url> siebel-docker
@@ -228,7 +241,7 @@ IMPORT_PARALLEL=4
 
 ---
 
-## Step 9 — Run the start script
+## Step 10 — Run the start script
 
 ```bash
 ./scripts/start.sh

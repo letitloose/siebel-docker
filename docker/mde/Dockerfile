@@ -21,7 +21,7 @@ ARG SIEBEL_ENTERPRISE=dev01
 ARG MDE_HOSTNAME=dev01mde01
 
 COPY docker/mde/config/ /config/
-COPY software/Siebel_Enterprise_Server /mnt/Siebel_Enterprise_Server/
+COPY --from=software Siebel_Enterprise_Server /mnt/Siebel_Enterprise_Server/
 
 RUN mkdir -p -m a+rwx /siebel/mde /siebel/oraInventory /stage \
     && groupadd -g ${SIEBEL_GID} ${SIEBEL_GROUP} \

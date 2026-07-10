@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: docker/instantclient/Dockerfile
+      additional_contexts:
+        software: ${SOFTWARE_DIR:-./software}
       args:
         OL_VERSION: ${OL_VERSION}
         ORACLE_IC_VERSION: ${ORACLE_IC_VERSION}
@@ -15,6 +17,8 @@ services:
     build:
       context: .
       dockerfile: docker/mde/Dockerfile
+      additional_contexts:
+        software: ${SOFTWARE_DIR:-./software}
       args:
         INSTANTCLIENT_IMAGE: ol8/instantclient/32bit:${ORACLE_IC_VERSION}
         SIEBEL_VERSION: ${SIEBEL_VERSION}
