@@ -1,4 +1,5 @@
 oracle_data
+oracle-data/
 .env
 .vscode/
 data/dumps/*.dmp

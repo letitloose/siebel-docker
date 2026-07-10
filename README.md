@@ -47,33 +47,33 @@ Files needed:
 - `oracle-instantclient19.31-basic-19.31.0.0.0-1.i386.rpm`
 - `oracle-instantclient19.31-sqlplus-19.31.0.0.0-1.i386.rpm`
 
-Place both files in `software/instantclient/`.
+Place both files in `software/instantclient/`. If you are using shared storage, place them in `$SOFTWARE_DIR/instantclient/` instead — `start.sh` will symlink `./software` there automatically when `SOFTWARE_DIR` is set in `.env`.
 
 ### 4. Add the Siebel Enterprise Server installer
 
-Extract your Siebel 24.9 installer zip into `software/Siebel_Enterprise_Server/`. The directory must contain `Disk1/` after extraction.
+Extract your Siebel 24.9 installer zip into `software/Siebel_Enterprise_Server/`. The directory must contain `Disk1/` after extraction. If using shared storage, extract into `$SOFTWARE_DIR/Siebel_Enterprise_Server/`.
 
 ### 5. Add the database dump
 
 ```bash
-cp /path/to/your/export.dmp data/dumps/
+cp /path/to/your/export.dmp "${DATA_DIR:-./data}/dumps/"
 ```
 
-Set `DUMP_FILE` in `.env` (next step) to match the filename. Ownership on `data/dumps/` is set automatically by `start.sh`.
+Set `DUMP_FILE` in `.env` (next step) to match the filename. Ownership on the dumps directory is set automatically by `start.sh`.
 
 ### 6. Add the web assets
 
-Extract your `siebelwebroot_Backup.zip` into `data/webroot/`:
+Extract your `siebelwebroot_Backup.zip` into `$DATA_DIR/webroot/` (defaults to `./data/webroot/`):
 
 ```bash
-unzip siebelwebroot_Backup.zip -d data/webroot/
-mv data/webroot/siebelwebroot_Backup/* data/webroot/
-rmdir data/webroot/siebelwebroot_Backup
+unzip siebelwebroot_Backup.zip -d "${DATA_DIR:-./data}/webroot/"
+mv "${DATA_DIR:-./data}/webroot/siebelwebroot_Backup/"* "${DATA_DIR:-./data}/webroot/"
+rmdir "${DATA_DIR:-./data}/webroot/siebelwebroot_Backup"
 ```
 
 On Windows, run this in Git Bash.
 
-The `data/webroot/` directory is bind-mounted into the MDE container. Changes on the host are served immediately with no container restart needed.
+The webroot directory is bind-mounted into the MDE container. Changes on the host are served immediately with no container restart needed.
 
 ### 7. Configure .env
 
@@ -91,9 +91,16 @@ cp .env.example .env
 | `SIEBEL_ANON_PWD` | Siebel GUESTCST (anonymous) password — **must match the value in your DB dump** |
 | `PKI_PWD` | SSL keystore password — set to anything secure |
 | `PKI_DOMAIN` | Your domain, e.g. `company.com` — used in TLS certificate SANs |
-| `DUMP_FILE` | Filename of your `.dmp` file as placed in `data/dumps/` |
+| `DUMP_FILE` | Filename of your `.dmp` file in `$DATA_DIR/dumps/` |
 | `MDE_HOSTNAME` | Hostname for the MDE container, e.g. `dev01mde01` |
 | `SIEBEL_ENTERPRISE` | Name for the Siebel enterprise, e.g. `dev01` |
+
+**If using shared storage (e.g. OCI block volume or NFS mount):**
+
+| Variable | What it is |
+|---|---|
+| `DATA_DIR` | Path to the shared data root — `dumps/` and `webroot/` must exist under it |
+| `SOFTWARE_DIR` | Path to the shared software root — `instantclient/` and `Siebel_Enterprise_Server/` must exist under it |
 
 Everything else can stay at its default for a first run. See the [full variable reference](#env-variable-reference) below.
 
@@ -142,8 +149,12 @@ Login with `SADMIN` / (value of `AI_USER_PWD` in `.env`).
 
 | Variable | Default | Description |
 |---|---|---|
+| `DATA_DIR` | `./data` | Root for runtime data — set to a shared mount on OCI/NFS. Subdirs `dumps/` and `webroot/` must exist under it |
+| `ORACLE_DATA_DIR` | `./oracle-data` | Directory for Oracle datafiles — on OCI point this at a dedicated Higher Performance block volume |
+| `SOFTWARE_DIR` | _(unset)_ | If set, `start.sh` symlinks `./software` here before building images — useful for shared storage with the installer RPMs and Siebel zip |
+| `IMPORT_PARALLEL` | `1` | Number of parallel workers for the schema import — set to number of OCPUs on OCI for faster imports |
 | `ORACLE_PWD` | — | Oracle SYS / SYSTEM password |
-| `DUMP_FILE` | — | Data Pump export filename (file must be in `data/dumps/`) |
+| `DUMP_FILE` | — | Data Pump export filename (must be in `$DATA_DIR/dumps/`) |
 | `OL_VERSION` | `8` | Oracle Linux major version used as base for images |
 | `ORACLE_IC_VERSION` | `19.31` | Instant Client version (must match the RPM filenames) |
 | `SIEBEL_VERSION` | `24.9` | Siebel version tag applied to built images |
@@ -216,17 +227,23 @@ To start them again without rebuilding or re-bootstrapping:
 
 This starts the containers, waits for Oracle, starts the Siebel Tomcats, and tells you when the UI is ready.
 
-> **Never** run `docker compose down -v` — the `-v` flag destroys the Oracle data volume and requires a full 2-hour schema re-import.
+> **Never** delete the `ORACLE_DATA_DIR` directory (default `./oracle-data`) — it holds the Oracle datafiles and losing it requires a full 2-hour schema re-import. `docker compose down -v` is safe since Oracle data is a bind mount, not a named volume.
 
 ---
 
 ## Key operational notes
 
 - **Changing passwords after first start**: `AI_USER_PWD` and `SIEBEL_ANON_PWD` are rendered into the Oracle DB on first start by `01-setup.sh`. If you change them in `.env` afterwards, update the live DB with `ALTER USER SADMIN IDENTIFIED BY "...";` (and `GUESTCST` similarly), or drop the `oracle_data` volume and let the DB re-provision from scratch with `docker compose down -v`.
-- **Failed import**: If the container crashes mid-import, drop the volume and start clean: `docker compose down -v && docker compose up -d oracle19c`.
+- **Failed import**: If the container crashes mid-import, clear the Oracle data directory and start clean: `docker compose down && sudo rm -rf "${ORACLE_DATA_DIR:-./oracle-data}" && docker compose up -d oracle19c`.
 - **Import log**: `data/dumps/impdp_siebel.log`. Some grant errors are expected (roles that don't exist in this environment). Verify with the SQL queries above.
 - **Re-bootstrapping**: The bootstrap script force-recreates the MDE container every run, wiping its internal gateway state. Running it again does a full reconfiguration from scratch.
 - **`ENABLE_ARCHIVELOG`** is hardcoded to `true` — required by Siebel.
+
+---
+
+## Running on OCI
+
+See [docs/oci-setup.md](docs/oci-setup.md) for a step-by-step guide: creating a Block Volume for the large files, spinning up a compute instance, installing Docker, and running the start script.
 
 ---
 

@@ -12,8 +12,17 @@ cd "$(dirname "$0")/.."
 
 set -a; source .env; set +a
 
-echo "==> Setting ownership on data/dumps/ (Oracle process runs as uid 54321)"
-sudo chown -R 54321:54321 data/dumps/
+if [ -n "${SOFTWARE_DIR:-}" ]; then
+    echo "==> Symlinking software/ -> ${SOFTWARE_DIR}"
+    ln -sfn "$SOFTWARE_DIR" software
+fi
+
+echo "==> Setting ownership on ${DATA_DIR:-./data}/dumps/ (Oracle process runs as uid 54321)"
+sudo chown -R 54321:54321 "${DATA_DIR:-./data}/dumps/"
+
+echo "==> Preparing Oracle data directory ${ORACLE_DATA_DIR:-./oracle-data}"
+mkdir -p "${ORACLE_DATA_DIR:-./oracle-data}"
+sudo chown -R 54321:54321 "${ORACLE_DATA_DIR:-./oracle-data}"
 
 echo "==> Setting ownership on siebel-volumes/ (Siebel containers run as uid ${SIEBEL_UID})"
 sudo chown -R "${SIEBEL_UID}:${SIEBEL_GID}" siebel-volumes/

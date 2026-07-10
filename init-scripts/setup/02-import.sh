@@ -19,6 +19,7 @@ impdp \"sys/${ORACLE_PWD}@//localhost:1521/ORCLPDB1 as sysdba\" \
     DIRECTORY=siebel_dumps \
     DUMPFILE="${DUMP_FILE}" \
     LOGFILE=impdp_siebel.log \
-    TABLE_EXISTS_ACTION=REPLACE
+    TABLE_EXISTS_ACTION=REPLACE \
+    PARALLEL="${IMPORT_PARALLEL:-1}"
 
 echo "Import finished. Log: /opt/oracle/dumps/impdp_siebel.log"
