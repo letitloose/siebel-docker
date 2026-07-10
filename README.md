@@ -59,25 +59,19 @@ Extract your Siebel 24.9 installer zip into `software/Siebel_Enterprise_Server/`
 cp /path/to/your/export.dmp data/dumps/
 ```
 
-Set `DUMP_FILE` in `.env` (next step) to match the filename. Ownership on `data/dumps/` is handled automatically by `start.sh` (Linux) — see the note in `start.ps1` for Windows.
+Set `DUMP_FILE` in `.env` (next step) to match the filename. Ownership on `data/dumps/` is set automatically by `start.sh`.
 
 ### 6. Add the web assets
 
 Extract your `siebelwebroot_Backup.zip` into `data/webroot/`:
 
-**Linux / macOS:**
 ```bash
 unzip siebelwebroot_Backup.zip -d data/webroot/
 mv data/webroot/siebelwebroot_Backup/* data/webroot/
 rmdir data/webroot/siebelwebroot_Backup
 ```
 
-**Windows (PowerShell):**
-```powershell
-Expand-Archive siebelwebroot_Backup.zip -DestinationPath data\webroot\
-Move-Item data\webroot\siebelwebroot_Backup\* data\webroot\
-Remove-Item data\webroot\siebelwebroot_Backup
-```
+On Windows, run this in Git Bash.
 
 The `data/webroot/` directory is bind-mounted into the MDE container. Changes on the host are served immediately with no container restart needed.
 
