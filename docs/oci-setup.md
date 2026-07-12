@@ -53,7 +53,7 @@ You need two block volumes. Create them both before creating the instance — th
 4. **Availability Domain**: must match the Block Volume from Step 1
 5. **Networking**: choose or create a VCN and public subnet
 6. **SSH keys**: add your public key
-7. **Boot volume**: increase to at least **100 GB** (Docker images and the Oracle data volume live here)
+7. **Boot volume**: increase to at least **100 GB**
 8. Click **Create**
 
 Wait for the instance status to show **Running**, then note its public IP.
@@ -90,6 +90,12 @@ Both will appear as new block devices (e.g. `/dev/sdb` and `/dev/sdc`). Use `lsb
 
 ```bash
 ssh -i ~/.ssh/your_private_key opc@<instance-public-ip>
+```
+
+Oracle Linux's default LVM layout only allocates 36 GB to root, leaving the rest of the boot volume unallocated. Claim it before doing anything else:
+
+```bash
+sudo /usr/libexec/oci-growfs
 ```
 
 Check which devices appeared:
