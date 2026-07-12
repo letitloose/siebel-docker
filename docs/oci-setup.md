@@ -243,6 +243,12 @@ SIEBEL_ENTERPRISE=...
 
 # Set to the number of OCPUs on your instance to parallelise the schema import
 IMPORT_PARALLEL=4
+
+# Oracle memory tuning — strongly recommended on OCI.
+# Without these, Oracle defaults to ~1.5 GB SGA regardless of available RAM,
+# causing slow query performance. For a 32 GB instance these values work well.
+ORACLE_SGA=12G
+ORACLE_PGA=4G
 ```
 
 ---
