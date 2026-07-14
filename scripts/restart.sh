@@ -34,6 +34,9 @@ until curl -sk --max-time "$CURL_MAX_TIME" "${MDE_URL}/cginfo" > /dev/null; do
     sleep 5
 done
 
+echo "==> Warming Oracle buffer cache in background (5-15 min)"
+./scripts/warmup-db.sh &
+
 echo "==> Siebel is up. Wait 3-5 minutes for object managers to initialise, then open:"
 echo "    https://localhost:4443/siebel/app/publicsector/${SIEBEL_PRIMARY_LANG}"
 echo "    Login: ${AI_USERNAME} / (value of AI_USER_PWD in .env)"

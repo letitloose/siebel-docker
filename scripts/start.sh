@@ -35,3 +35,7 @@ docker compose up -d oracle19c
 
 echo "==> Bootstrapping Siebel (waits for database health, then configures the enterprise)"
 ./scripts/bootstrap-mde.sh
+
+echo "==> Warming Oracle buffer cache in background (5-15 min)"
+echo "    Cache tables will be hot before the first user logs in."
+./scripts/warmup-db.sh &
