@@ -1,7 +1,5 @@
 WHENEVER SQLERROR CONTINUE
 
--- All setup runs inside the PDB
-ALTER SESSION SET CONTAINER = ORCLPDB1;
 ALTER SESSION SET "_oracle_script" = TRUE;
 
 -- Expose the host dumps bind-mount as an Oracle directory so impdp can read it

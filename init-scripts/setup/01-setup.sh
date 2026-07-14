@@ -22,6 +22,6 @@ sed \
     -e "s|@@SIEBEL_ANON_PWD@@|${SIEBEL_ANON_PWD}|g" \
     "$TEMPLATE" > "$RENDERED"
 
-sqlplus -s / as sysdba @"$RENDERED"
+sqlplus -s sys/"${ORACLE_PWD}"@//localhost:1521/ORCLPDB1 as sysdba @"$RENDERED"
 
 rm -f "$RENDERED"
