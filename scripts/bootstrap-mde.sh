@@ -90,14 +90,27 @@ echo "==> Recreating the mde container for a guaranteed clean starting state"
 docker compose up -d --force-recreate mde
 echo "==> Waiting for Siebel schema to be ready"
 echo "    On first run this takes ~2 hours (DB creation + schema import). Polling every 5 minutes..."
-until docker compose exec -T oracle19c bash -c \
-    "echo 'SELECT count(*) FROM siebel.s_app_ver;' | timeout 30 sqlplus -s sys/${ORACLE_PWD}@//localhost:1521/ORCLPDB1 as sysdba" \
-    2>/dev/null | grep -qE '^[[:space:]]*[1-9][0-9]*[[:space:]]*$'; do
+while true; do
+    # impdp writes its log to the dumps mount; if the process is still running
+    # the schema exists but isn't fully populated yet — don't proceed early.
+    impdp_running=$(docker compose exec -T oracle19c pgrep -x impdp 2>/dev/null && echo yes || echo no)
+    schema_ready=$(docker compose exec -T oracle19c bash -c \
+        "echo 'SELECT count(*) FROM siebel.s_app_ver;' | timeout 30 sqlplus -s sys/${ORACLE_PWD}@//localhost:1521/ORCLPDB1 as sysdba" \
+        2>/dev/null | grep -qE '^[[:space:]]*[1-9][0-9]*[[:space:]]*$' && echo yes || echo no)
+
+    if [ "$impdp_running" = "no" ] && [ "$schema_ready" = "yes" ]; then
+        break
+    fi
+
     imported=$(docker compose exec -T oracle19c grep -c '. . imported' /opt/oracle/dumps/impdp_siebel.log 2>/dev/null || echo 0)
     last_obj=$(docker compose logs oracle19c 2>/dev/null \
         | grep "Processing object type" | tail -1 \
         | sed 's/.*Processing object type //') || true
-    echo "    [$(date '+%H:%M:%S')] ${imported}/${IMPORT_OBJECT_TOTAL} objects imported — phase: ${last_obj:-waiting for import to start}"
+    if [ "$impdp_running" = "yes" ]; then
+        echo "    [$(date '+%H:%M:%S')] ${imported}/${IMPORT_OBJECT_TOTAL} objects imported — phase: ${last_obj:-waiting for import to start}"
+    else
+        echo "    [$(date '+%H:%M:%S')] Waiting for database..."
+    fi
     echo "                    Next check in 5 minutes..."
     sleep 300
 done
