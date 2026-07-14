@@ -290,6 +290,25 @@ api POST /cloudgateway/profiles/swsm/ "{
           \"AnonUserName\": \"${SIEBEL_ANON_USER}\",
           \"AnonPassword\": \"${SIEBEL_ANON_PWD}\"
         }
+      },
+      {
+        \"Name\": \"webtools\",
+        \"ObjectManager\": \"SWToolsObjMgr_${SIEBEL_PRIMARY_LANG}\",
+        \"Language\": \"${SIEBEL_PRIMARY_LANG}\",
+        \"StartCommand\": \"\",
+        \"EnableExtServiceOnly\": false,
+        \"AvailableInSiebelMobile\": false,
+        \"AuthenticationProperties\": {
+          \"SessionTimeout\": 900,
+          \"GuestSessionTimeout\": 300,
+          \"SessionTimeoutWLMethod\": \"HeartBeat\",
+          \"SessionTimeoutWLCommand\": \"UpdatePrefMsg\",
+          \"SessionTokenMaxAge\": 2880,
+          \"SessionTokenTimeout\": 900,
+          \"SingleSignOn\": false,
+          \"AnonUserName\": \"${SIEBEL_ANON_USER}\",
+          \"AnonPassword\": \"${SIEBEL_ANON_PWD}\"
+        }
       }
     ],
     \"RESTInBoundResource\": [{\"ResourceType\": \"Data\", \"RESTResourceParamList\": []}],
@@ -343,4 +362,5 @@ api POST /cloudgateway/deployments/swsm/ "{
 
 echo "==> Bootstrap complete. Wait 3-5 minutes for object managers to initialise, then open:"
 echo "    https://localhost:4443/siebel/app/publicsector/${SIEBEL_PRIMARY_LANG}"
+echo "    https://localhost:4443/siebel/app/webtools/${SIEBEL_PRIMARY_LANG}"
 echo "    Login: ${AI_USERNAME} / (value of AI_USER_PWD in .env)"

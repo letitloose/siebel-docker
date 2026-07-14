@@ -14,7 +14,7 @@ MDE_URL="https://localhost:4443/siebel/v1.0"
 CURL_MAX_TIME=120
 
 echo "==> Starting containers"
-docker compose start
+docker compose start oracle19c mde
 
 echo "==> Waiting for Oracle to be ready"
 until docker compose exec -T oracle19c bash -c \
