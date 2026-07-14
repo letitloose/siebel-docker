@@ -36,9 +36,12 @@ ALTER PROFILE DEFAULT LIMIT PASSWORD_LIFE_TIME UNLIMITED;
 -- Roles may not exist on first run; errors are expected and suppressed above
 DROP ROLE sse_role;
 DROP ROLE tblo_role;
+DROP ROLE sbl_sel_role;
 
 CREATE ROLE sse_role;
 GRANT CREATE SESSION TO sse_role;
+
+CREATE ROLE sbl_sel_role;
 
 CREATE ROLE tblo_role;
 GRANT ALTER SESSION, CREATE CLUSTER, CREATE DATABASE LINK, CREATE INDEXTYPE,
