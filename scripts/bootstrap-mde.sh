@@ -386,6 +386,12 @@ until curl -sk --max-time 300 \
 done
 echo "    Object managers ready."
 
+echo "==> Triggering Web Tools Object Manager initialisation in background (10-20 min)"
+curl -sk --max-time 1200 \
+    "https://localhost:4443/siebel/app/webtools/${SIEBEL_PRIMARY_LANG}" \
+    > /dev/null 2>&1 &
+echo "    Web Tools will be warm by the time you need it."
+
 echo "==> Bootstrap complete. Siebel is ready:"
 echo "    https://localhost:4443/siebel/app/publicsector/${SIEBEL_PRIMARY_LANG}"
 echo "    https://localhost:4443/siebel/app/webtools/${SIEBEL_PRIMARY_LANG}"
