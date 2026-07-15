@@ -375,7 +375,18 @@ api POST /cloudgateway/deployments/swsm/ "{
   }
 }"
 
-echo "==> Bootstrap complete. Wait 3-5 minutes for object managers to initialise, then open:"
+echo "==> Waiting for Object Managers to initialise (first request loads the Siebel repository)"
+echo "    This takes 3-5 minutes — subsequent logins will be instant."
+until curl -sk --max-time 300 \
+    -X POST "${MDE_URL}/auth" \
+    -H "Content-Type: application/json" \
+    -d "{\"username\":\"${AI_USERNAME}\",\"password\":\"${AI_USER_PWD}\"}" \
+    | grep -q '"token"'; do
+    sleep 15
+done
+echo "    Object managers ready."
+
+echo "==> Bootstrap complete. Siebel is ready:"
 echo "    https://localhost:4443/siebel/app/publicsector/${SIEBEL_PRIMARY_LANG}"
 echo "    https://localhost:4443/siebel/app/webtools/${SIEBEL_PRIMARY_LANG}"
 echo "    Login: ${AI_USERNAME} / (value of AI_USER_PWD in .env)"
