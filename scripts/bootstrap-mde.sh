@@ -118,30 +118,19 @@ while true; do
 done
 echo "    [$(date '+%H:%M:%S')] Siebel schema ready."
 
-CG_LOG=/siebel/mde/applicationcontainer_internal/logs/catalina.out
-CG_MARKER="BOOTSTRAP_CG_START_$(date +%s)"
-docker compose exec -T mde bash -c "mkdir -p \$(dirname $CG_LOG) && echo '$CG_MARKER' > $CG_LOG"
-
 echo "==> Starting internal Tomcat (Cloud Gateway)"
 docker compose exec -T --workdir /config mde bash ./start_ai_internal.sh
-
-echo "==> Waiting for Cloud Gateway to be ready (takes ~6 min on first start)"
-until docker compose exec -T mde bash -c \
-    "grep -A99999 '$CG_MARKER' $CG_LOG 2>/dev/null | grep -q 'Server startup in'"; do
-    echo "    [$(date '+%H:%M:%S')] Waiting for Cloud Gateway..."
-    sleep 15
-done
-echo "    [$(date '+%H:%M:%S')] Cloud Gateway ready."
 
 echo "==> Starting external Tomcat (Application Interface)"
 docker compose exec -T --workdir /config mde bash ./start_ai_external.sh
 
-echo "==> Waiting for Application Interface port to open"
-until [ "$(curl -sk --max-time 10 -o /dev/null -w '%{http_code}' "${MDE_URL}/cginfo")" != "000" ]; do
-    echo "    [$(date '+%H:%M:%S')] Waiting for Application Interface..."
-    sleep 5
+echo "==> Waiting for management API to be reachable"
+until [ "$(curl -sk --max-time 10 -o /dev/null -w '%{http_code}' \
+    "${MDE_URL}/cginfo" --user "${AI_USERNAME}:${AI_USER_PWD}")" = "200" ]; do
+    echo "    [$(date '+%H:%M:%S')] Waiting..."
+    sleep 10
 done
-echo "    [$(date '+%H:%M:%S')] Application Interface ready."
+echo "    [$(date '+%H:%M:%S')] Management API ready."
 
 echo "==> 1. Setting Cloud Gateway host info"
 api POST /cginfo "{
@@ -391,13 +380,28 @@ api POST /cloudgateway/deployments/swsm/ "{
   }
 }"
 
-echo "==> Waiting for Object Managers to initialise (first request loads the Siebel repository)"
-echo "    This takes 3-5 minutes — subsequent logins will be instant."
+echo "==> Restarting Application Interface to load the deployed profile"
+docker compose exec -T mde \
+    /siebel/mde/applicationcontainer_external/bin/catalina.sh stop 10 -force 2>/dev/null || true
+docker compose exec -T --workdir /config mde bash ./start_ai_external.sh
+
+echo "==> Waiting for Application Interface to be ready with deployed profile"
+until [ "$(curl -sk --max-time 10 -o /dev/null -w '%{http_code}' \
+    "${MDE_URL}/cginfo" --user "${AI_USERNAME}:${AI_USER_PWD}")" = "200" ]; do
+    echo "    [$(date '+%H:%M:%S')] Waiting for Application Interface..."
+    sleep 10
+done
+echo "    [$(date '+%H:%M:%S')] Application Interface ready."
+
+echo "==> Waiting for Object Managers to initialise"
+echo "    On first bootstrap this takes 20-30 min (loading the Siebel repository from the DB)."
+echo "    Subsequent restarts take 3-5 min."
 until curl -sk --max-time 300 \
     -X POST "${MDE_URL}/auth" \
     -H "Content-Type: application/json" \
     -d "{\"username\":\"${AI_USERNAME}\",\"password\":\"${AI_USER_PWD}\"}" \
     | grep -q '"token"'; do
+    echo "    [$(date '+%H:%M:%S')] Waiting for Object Managers..."
     sleep 15
 done
 echo "    Object managers ready."
