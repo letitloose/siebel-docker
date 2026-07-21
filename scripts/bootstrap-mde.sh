@@ -379,29 +379,37 @@ api POST /cloudgateway/deployments/swsm/ "{
     \"NodeDesc\": \"siebsai1 Siebel Application Interface Node\"
   }
 }"
+wait_for_deployed "/cloudgateway/deployments/swsm/siebsai1"
 
 echo "==> Restarting Application Interface to load the deployed profile"
-docker compose exec -T mde \
-    /siebel/mde/applicationcontainer_external/bin/catalina.sh stop 10 -force 2>/dev/null || true
+docker compose exec -T mde bash -c \
+    "pkill -f applicationcontainer_external 2>/dev/null; sleep 5; exit 0"
 docker compose exec -T --workdir /config mde bash ./start_ai_external.sh
 
-echo "==> Waiting for Application Interface to be ready with deployed profile"
-until [ "$(curl -sk --max-time 10 -o /dev/null -w '%{http_code}' \
-    "${MDE_URL}/cginfo" --user "${AI_USERNAME}:${AI_USER_PWD}")" = "200" ]; do
-    echo "    [$(date '+%H:%M:%S')] Waiting for Application Interface..."
+echo "==> Waiting for Application Interface to come up with deployed profile"
+echo "    Polling /auth — 404 means profile not yet loaded, other responses mean it is."
+until status=$(curl -sk --max-time 30 \
+        -X POST "${MDE_URL}/auth" \
+        -H "Content-Type: application/json" \
+        -d "{\"username\":\"${AI_USERNAME}\",\"password\":\"${AI_USER_PWD}\"}" \
+        -w "\n%{http_code}" | tail -1); \
+    [ "$status" != "404" ] && [ "$status" != "000" ]; do
+    echo "    [$(date '+%H:%M:%S')] /auth returned ${status} — waiting for profile load..."
     sleep 10
 done
-echo "    [$(date '+%H:%M:%S')] Application Interface ready."
+echo "    [$(date '+%H:%M:%S')] Profile loaded — /auth endpoint is registered."
 
 echo "==> Waiting for Object Managers to initialise"
 echo "    On first bootstrap this takes 20-30 min (loading the Siebel repository from the DB)."
 echo "    Subsequent restarts take 3-5 min."
-until curl -sk --max-time 300 \
-    -X POST "${MDE_URL}/auth" \
-    -H "Content-Type: application/json" \
-    -d "{\"username\":\"${AI_USERNAME}\",\"password\":\"${AI_USER_PWD}\"}" \
-    | grep -q '"token"'; do
-    echo "    [$(date '+%H:%M:%S')] Waiting for Object Managers..."
+until response=$(curl -sk --max-time 300 \
+        -X POST "${MDE_URL}/auth" \
+        -H "Content-Type: application/json" \
+        -d "{\"username\":\"${AI_USERNAME}\",\"password\":\"${AI_USER_PWD}\"}" \
+        -w "\n%{http_code}"); \
+    echo "$response" | grep -q '"token"'; do
+    status=$(echo "$response" | tail -1)
+    echo "    [$(date '+%H:%M:%S')] /auth returned HTTP ${status} — OMs still initialising..."
     sleep 15
 done
 echo "    Object managers ready."

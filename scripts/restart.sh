@@ -43,12 +43,14 @@ echo "==> Warming Oracle buffer cache in background (5-15 min)"
 ./scripts/warmup-db.sh &
 
 echo "==> Waiting for Object Managers to initialise (3-5 min)"
-until curl -sk --max-time 300 \
-    -X POST "${MDE_URL}/auth" \
-    -H "Content-Type: application/json" \
-    -d "{\"username\":\"${AI_USERNAME}\",\"password\":\"${AI_USER_PWD}\"}" \
-    | grep -q '"token"'; do
-    echo "    [$(date '+%H:%M:%S')] Waiting for Object Managers..."
+until response=$(curl -sk --max-time 300 \
+        -X POST "${MDE_URL}/auth" \
+        -H "Content-Type: application/json" \
+        -d "{\"username\":\"${AI_USERNAME}\",\"password\":\"${AI_USER_PWD}\"}" \
+        -w "\n%{http_code}"); \
+    echo "$response" | grep -q '"token"'; do
+    status=$(echo "$response" | tail -1)
+    echo "    [$(date '+%H:%M:%S')] /auth returned HTTP ${status} — OMs still initialising..."
     sleep 15
 done
 echo "    Object managers ready."
