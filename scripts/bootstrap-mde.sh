@@ -118,14 +118,19 @@ while true; do
 done
 echo "    [$(date '+%H:%M:%S')] Siebel schema ready."
 
-echo "==> Starting MDE internal and external Tomcat"
+echo "==> Starting internal Tomcat (Cloud Gateway)"
 docker compose exec -T --workdir /config mde bash ./start_ai_internal.sh
-docker compose exec -T --workdir /config mde bash ./start_ai_external.sh
 
-echo "==> Waiting for the Cloud Gateway REST API to respond"
-until curl -sk --max-time "$CURL_MAX_TIME" "${MDE_URL}/cginfo" > /dev/null; do
-    sleep 5
+echo "==> Waiting for Cloud Gateway to be ready (takes ~6 min on first start)"
+until [ "$(curl -sk --max-time 10 -o /dev/null -w '%{http_code}' \
+    "${MDE_URL}/cginfo" --user "${AI_USERNAME}:${AI_USER_PWD}")" = "200" ]; do
+    echo "    [$(date '+%H:%M:%S')] Waiting for Cloud Gateway..."
+    sleep 15
 done
+echo "    [$(date '+%H:%M:%S')] Cloud Gateway ready."
+
+echo "==> Starting external Tomcat (Application Interface)"
+docker compose exec -T --workdir /config mde bash ./start_ai_external.sh
 
 echo "==> 1. Setting Cloud Gateway host info"
 api POST /cginfo "{
