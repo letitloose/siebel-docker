@@ -26,11 +26,13 @@ done
 echo "    [$(date '+%H:%M:%S')] Database ready."
 
 echo "==> Starting internal Tomcat (Cloud Gateway)"
+docker compose exec -T mde truncate -s 0 \
+    /siebel/mde/applicationcontainer_internal/logs/catalina.out
 docker compose exec -T --workdir /config mde bash ./start_ai_internal.sh
 
 echo "==> Waiting for Cloud Gateway to be ready (takes ~6 min on first start)"
-until [ "$(curl -sk --max-time 10 -o /dev/null -w '%{http_code}' \
-    "${MDE_URL}/cginfo" --user "${AI_USERNAME}:${AI_USER_PWD}")" = "200" ]; do
+until docker compose exec -T mde grep -q "Server startup in" \
+    /siebel/mde/applicationcontainer_internal/logs/catalina.out; do
     echo "    [$(date '+%H:%M:%S')] Waiting for Cloud Gateway..."
     sleep 15
 done
