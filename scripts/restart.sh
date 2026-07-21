@@ -25,14 +25,16 @@ until docker compose exec -T oracle19c bash -c \
 done
 echo "    [$(date '+%H:%M:%S')] Database ready."
 
+CG_LOG=/siebel/mde/applicationcontainer_internal/logs/catalina.out
+CG_MARKER="RESTART_CG_START_$(date +%s)"
+docker compose exec -T mde bash -c "mkdir -p \$(dirname $CG_LOG) && echo '$CG_MARKER' > $CG_LOG"
+
 echo "==> Starting internal Tomcat (Cloud Gateway)"
-docker compose exec -T mde truncate -s 0 \
-    /siebel/mde/applicationcontainer_internal/logs/catalina.out
 docker compose exec -T --workdir /config mde bash ./start_ai_internal.sh
 
 echo "==> Waiting for Cloud Gateway to be ready (takes ~6 min on first start)"
-until docker compose exec -T mde grep -q "Server startup in" \
-    /siebel/mde/applicationcontainer_internal/logs/catalina.out; do
+until docker compose exec -T mde bash -c \
+    "grep -A99999 '$CG_MARKER' $CG_LOG 2>/dev/null | grep -q 'Server startup in'"; do
     echo "    [$(date '+%H:%M:%S')] Waiting for Cloud Gateway..."
     sleep 15
 done
@@ -40,6 +42,13 @@ echo "    [$(date '+%H:%M:%S')] Cloud Gateway ready."
 
 echo "==> Starting external Tomcat (Application Interface)"
 docker compose exec -T --workdir /config mde bash ./start_ai_external.sh
+
+echo "==> Waiting for Application Interface port to open"
+until [ "$(curl -sk --max-time 10 -o /dev/null -w '%{http_code}' "${MDE_URL}/cginfo")" != "000" ]; do
+    echo "    [$(date '+%H:%M:%S')] Waiting for Application Interface..."
+    sleep 5
+done
+echo "    [$(date '+%H:%M:%S')] Application Interface ready."
 
 echo "==> Warming Oracle buffer cache in background (5-15 min)"
 ./scripts/warmup-db.sh &
