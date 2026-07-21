@@ -384,7 +384,11 @@ wait_for_deployed "/cloudgateway/deployments/swsm/siebsai1"
 echo "==> Restarting Application Interface to load the deployed profile"
 docker compose exec -T mde bash -c '
     pid=$(pgrep -f "catalina.home=/siebel/mde/applicationcontainer_external" | head -1)
-    if [ -n "$pid" ]; then kill "$pid"; sleep 5; fi'
+    if [ -n "$pid" ]; then
+        kill -9 "$pid"
+        while kill -0 "$pid" 2>/dev/null; do sleep 1; done
+        echo "    Old Application Interface process gone."
+    fi'
 docker compose exec -T --workdir /config mde bash ./start_ai_external.sh
 
 echo "==> Waiting for Application Interface to come up with deployed profile"
